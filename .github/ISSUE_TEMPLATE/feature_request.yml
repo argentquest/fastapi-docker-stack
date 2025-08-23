@@ -1,0 +1,176 @@
+name: ✨ Feature Request
+description: Suggest a new feature or enhancement for the FastAPI Docker Stack
+title: "[Feature]: "
+labels: ["enhancement", "triage"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for suggesting a new feature! Please provide details about your idea to help us understand and evaluate it.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Description
+      description: |
+        Is your feature request related to a problem? Please describe.
+        A clear and concise description of what the problem is.
+      placeholder: I'm always frustrated when... / I need to... / It would be helpful if...
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: |
+        Describe the solution you'd like.
+        A clear and concise description of what you want to happen.
+      placeholder: I would like to see...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Feature Category
+      description: What type of feature is this?
+      options:
+        - API / Endpoints
+        - Database / PostgreSQL
+        - Caching / Redis
+        - Storage / MinIO
+        - Security
+        - Performance
+        - Monitoring / Logging
+        - Docker / Infrastructure
+        - Testing
+        - Documentation
+        - Developer Experience
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: How important is this feature to you?
+      options:
+        - Nice to have
+        - Would be helpful
+        - Important for my use case
+        - Critical / Blocking
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: |
+        Describe alternatives you've considered.
+        A clear and concise description of any alternative solutions or features you've considered.
+      placeholder: I considered... / Another approach could be...
+
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Use Case
+      description: |
+        Describe your specific use case for this feature.
+        This helps us understand the context and prioritize accordingly.
+      placeholder: |
+        In my application, I need to...
+        This would help me...
+        Currently I have to work around this by...
+    validations:
+      required: true
+
+  - type: textarea
+    id: implementation
+    attributes:
+      label: Implementation Ideas
+      description: |
+        Do you have any ideas on how this could be implemented?
+        This is optional but can be helpful for discussion.
+      placeholder: |
+        This could be implemented by...
+        We could add a new service...
+        Configuration could be added to...
+
+  - type: textarea
+    id: examples
+    attributes:
+      label: Examples
+      description: |
+        Provide examples of how this feature would be used.
+        Include code snippets, API calls, configuration examples, etc.
+      placeholder: |
+        # Example usage:
+        POST /api/new-endpoint
+        {
+          "example": "data"
+        }
+      render: shell
+
+  - type: checkboxes
+    id: complexity
+    attributes:
+      label: Implementation Complexity
+      description: What level of change do you think this would require?
+      options:
+        - label: Simple configuration change
+        - label: New API endpoint
+        - label: New service integration
+        - label: Major architectural change
+        - label: I'm not sure
+
+  - type: checkboxes
+    id: breaking-changes
+    attributes:
+      label: Breaking Changes
+      description: Would this feature require breaking changes?
+      options:
+        - label: This feature would require breaking changes to existing APIs
+        - label: This feature would require changes to configuration format
+        - label: This feature would require database schema changes
+        - label: This feature is backward compatible
+        - label: I'm not sure about compatibility impact
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: |
+        Add any other context, screenshots, mockups, or examples about the feature request here.
+      placeholder: |
+        Links to similar implementations...
+        Screenshots or mockups...
+        Related discussions...
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Contribution
+      description: Would you be interested in contributing to this feature?
+      options:
+        - label: I would be interested in implementing this feature
+        - label: I would be interested in testing this feature
+        - label: I would be interested in providing feedback during development
+        - label: I would prefer someone else implement this
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      description: Please confirm the following
+      options:
+        - label: I have searched existing issues and this feature hasn't been requested
+          required: true
+        - label: This feature request is related to the FastAPI Docker Stack
+          required: true
+        - label: I have provided a clear use case for this feature
+          required: true

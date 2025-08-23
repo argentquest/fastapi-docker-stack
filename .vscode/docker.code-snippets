@@ -1,0 +1,32 @@
+{
+  "Docker Compose Service": {
+    "prefix": "dcs",
+    "body": [
+      "${1:service_name}:",
+      "  image: ${2:image_name}:${3:tag}",
+      "  container_name: v2-poc-${1:service_name}",
+      "  environment:",
+      "    - ${4:ENV_VAR}=${5:value}",
+      "  ports:",
+      "    - \"${6:host_port}:${7:container_port}\"",
+      "  volumes:",
+      "    - ${8:./local/path}:${9:/container/path}",
+      "  depends_on:",
+      "    - ${10:dependency}",
+      "  restart: unless-stopped"
+    ],
+    "description": "Docker Compose service definition"
+  },
+  "Docker Health Check": {
+    "prefix": "dhc",
+    "body": [
+      "healthcheck:",
+      "  test: [\"CMD\", \"${1:command}\", \"${2:arg}\"]",
+      "  interval: ${3:30s}",
+      "  timeout: ${4:10s}",
+      "  retries: ${5:3}",
+      "  start_period: ${6:40s}"
+    ],
+    "description": "Docker health check configuration"
+  }
+}

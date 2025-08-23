@@ -1,0 +1,252 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+env:
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Set up Python ${{ env.PYTHON_VERSION }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+    
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
+      with:
+        enable-cache: true
+    
+    - name: Install dependencies
+      run: uv pip install --system -e .
+    
+    - name: Run full test suite
+      run: |
+        # Create test environment
+        cat > .env << EOF
+        OPENROUTER_API_KEY=test-key
+        DATABASE_URL=postgresql://pocuser:pocpass@postgres:5432/poc_db
+        POSTGRES_USER=pocuser
+        POSTGRES_PASSWORD=pocpass  
+        POSTGRES_DB=poc_db
+        APP_ENV=production
+        LOG_LEVEL=INFO
+        EOF
+        
+        # Start services
+        docker-compose up -d
+        sleep 60
+        
+        # Run comprehensive tests
+        python run_all_tests.py
+    
+    - name: Build Docker images
+      run: |
+        # Build production image
+        docker build -t fastapi-docker-stack:${{ github.ref_name }} .
+        docker build -t fastapi-docker-stack:latest .
+    
+    - name: Generate changelog
+      id: changelog
+      run: |
+        # Generate changelog from commits since last tag
+        PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+        
+        if [ -n "$PREVIOUS_TAG" ]; then
+          echo "CHANGELOG<<EOF" >> $GITHUB_OUTPUT
+          echo "## Changes since $PREVIOUS_TAG" >> $GITHUB_OUTPUT
+          echo "" >> $GITHUB_OUTPUT
+          git log --pretty=format:"- %s (%h)" $PREVIOUS_TAG..HEAD >> $GITHUB_OUTPUT
+          echo "" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+        else
+          echo "CHANGELOG<<EOF" >> $GITHUB_OUTPUT
+          echo "## Initial Release" >> $GITHUB_OUTPUT
+          echo "" >> $GITHUB_OUTPUT
+          echo "- FastAPI Docker Stack initial implementation" >> $GITHUB_OUTPUT
+          echo "- Production-ready microservices architecture" >> $GITHUB_OUTPUT
+          echo "- PostgreSQL + pgvector for vector similarity search" >> $GITHUB_OUTPUT
+          echo "- Redis caching layer" >> $GITHUB_OUTPUT
+          echo "- MinIO S3-compatible object storage" >> $GITHUB_OUTPUT
+          echo "- Nginx reverse proxy" >> $GITHUB_OUTPUT
+          echo "- Comprehensive test suite" >> $GITHUB_OUTPUT
+          echo "- Docker Compose configurations" >> $GITHUB_OUTPUT
+          echo "- Security hardening and best practices" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+        fi
+    
+    - name: Create Release Archive
+      run: |
+        # Create release archive with documentation
+        mkdir -p release-artifacts
+        
+        # Copy essential files
+        cp README.md release-artifacts/
+        cp CONTRIBUTING.md release-artifacts/
+        cp SECURITY.md release-artifacts/
+        cp LICENSE release-artifacts/
+        cp docker-compose.yml release-artifacts/
+        cp docker-compose.prod.yml release-artifacts/
+        cp Dockerfile release-artifacts/
+        cp pyproject.toml release-artifacts/
+        cp .env.example release-artifacts/ || echo "# Example environment file" > release-artifacts/.env.example
+        
+        # Create deployment guide
+        cat > release-artifacts/DEPLOYMENT.md << 'EOF'
+        # FastAPI Docker Stack - Deployment Guide
+        
+        ## Quick Start
+        
+        1. **Download and extract** this release archive
+        2. **Copy environment template**: `cp .env.example .env`
+        3. **Configure** your `.env` file with your settings
+        4. **Start services**: `docker-compose up -d`
+        5. **Run tests**: `python run_all_tests.py`
+        
+        ## Production Deployment
+        
+        For production, use the hardened configuration:
+        ```bash
+        docker-compose -f docker-compose.prod.yml up -d
+        ```
+        
+        ## Documentation
+        
+        - [README.md](README.md) - Complete project overview
+        - [SECURITY.md](SECURITY.md) - Security best practices
+        - [CONTRIBUTING.md](CONTRIBUTING.md) - Development guidelines
+        
+        ## Support
+        
+        - GitHub Issues: Report bugs and request features
+        - Security Issues: Follow responsible disclosure in SECURITY.md
+        EOF
+        
+        # Create archive
+        tar -czf fastapi-docker-stack-${{ github.ref_name }}.tar.gz -C release-artifacts .
+    
+    - name: Create GitHub Release
+      uses: actions/create-release@v1
+      id: create_release
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref_name }}
+        release_name: FastAPI Docker Stack ${{ github.ref_name }}
+        body: |
+          # FastAPI Docker Stack ${{ github.ref_name }}
+          
+          Production-ready FastAPI microservices stack with PostgreSQL+pgvector, Redis, MinIO, and Nginx.
+          
+          ${{ steps.changelog.outputs.CHANGELOG }}
+          
+          ## 🚀 Quick Start
+          
+          ```bash
+          # Download and extract release
+          wget https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/fastapi-docker-stack-${{ github.ref_name }}.tar.gz
+          tar -xzf fastapi-docker-stack-${{ github.ref_name }}.tar.gz
+          cd fastapi-docker-stack-${{ github.ref_name }}
+          
+          # Configure environment
+          cp .env.example .env
+          # Edit .env with your settings
+          
+          # Start services
+          docker-compose up -d
+          ```
+          
+          ## 📋 What's Included
+          
+          - 🐍 **FastAPI** - Modern, fast Python web framework
+          - 🐘 **PostgreSQL + pgvector** - Vector similarity search
+          - 🔴 **Redis** - High-performance caching
+          - 📦 **MinIO** - S3-compatible object storage
+          - 🌐 **Nginx** - Reverse proxy and load balancer
+          - 🐳 **Docker** - Full containerization
+          - 🧪 **Comprehensive tests** - Production-ready testing
+          - 🔒 **Security hardening** - Production security measures
+          
+          ## 📊 Benefits
+          
+          - 💰 **90% cost savings** vs cloud services
+          - 🏠 **Self-hosted** - Full control over your infrastructure
+          - 🚀 **Production-ready** - Security and performance optimized
+          - 📈 **Scalable** - Microservices architecture
+          - 🔧 **Customizable** - Open source and extensible
+          
+          ## ⚠️ Requirements
+          
+          - Python 3.11+
+          - Docker & Docker Compose
+          - 8GB RAM (16GB recommended)
+          - 20GB disk space
+          
+          See [README.md](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/README.md) for complete documentation.
+        draft: false
+        prerelease: false
+    
+    - name: Upload Release Archive
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./fastapi-docker-stack-${{ github.ref_name }}.tar.gz
+        asset_name: fastapi-docker-stack-${{ github.ref_name }}.tar.gz
+        asset_content_type: application/gzip
+    
+    - name: Cleanup
+      if: always()
+      run: docker-compose down -v
+
+  docker-publish:
+    name: Publish Docker Images
+    runs-on: ubuntu-latest
+    needs: [release]
+    if: startsWith(github.ref, 'refs/tags/v')
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    
+    - name: Login to GitHub Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: |
+          ghcr.io/${{ github.repository }}
+        tags: |
+          type=ref,event=tag
+          type=raw,value=latest,enable={{is_default_branch}}
+    
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        platforms: linux/amd64,linux/arm64
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max

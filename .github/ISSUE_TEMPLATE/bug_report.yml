@@ -1,0 +1,153 @@
+name: 🐛 Bug Report
+description: Report a bug or issue with the FastAPI Docker Stack
+title: "[Bug]: "
+labels: ["bug", "triage"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for taking the time to report a bug! Please fill out the information below to help us diagnose and fix the issue.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear and concise description of what the bug is.
+      placeholder: Describe the bug...
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: Steps to reproduce the behavior
+      placeholder: |
+        1. Start the application with 'docker-compose up -d'
+        2. Send a request to '/ai-test'
+        3. Observe the error...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: A clear description of what you expected to happen.
+      placeholder: What should have happened?
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      description: What actually happened instead?
+      placeholder: What actually happened?
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Error Logs
+      description: |
+        Please include relevant error logs. You can get logs with:
+        - Application logs: `docker-compose logs app`
+        - All services: `docker-compose logs`
+        - Specific service: `docker-compose logs [service-name]`
+      placeholder: Paste error logs here...
+      render: shell
+
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Environment
+      description: What environment are you running in?
+      options:
+        - Development (docker-compose.yml)
+        - Production (docker-compose.prod.yml)
+        - Custom configuration
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: Operating System
+      description: What operating system are you using?
+      placeholder: e.g., Ubuntu 22.04, Windows 11, macOS 13.0
+    validations:
+      required: true
+
+  - type: input
+    id: python-version
+    attributes:
+      label: Python Version
+      description: What version of Python are you using?
+      placeholder: e.g., 3.11.5
+    validations:
+      required: true
+
+  - type: input
+    id: docker-version
+    attributes:
+      label: Docker Version
+      description: What version of Docker are you using? Run `docker --version`
+      placeholder: e.g., Docker version 24.0.6
+    validations:
+      required: true
+
+  - type: input
+    id: docker-compose-version
+    attributes:
+      label: Docker Compose Version
+      description: What version of Docker Compose? Run `docker-compose --version`
+      placeholder: e.g., Docker Compose version 2.21.0
+    validations:
+      required: true
+
+  - type: textarea
+    id: config
+    attributes:
+      label: Configuration
+      description: |
+        Please share relevant configuration (remove sensitive information like API keys):
+        - Environment variables you've set
+        - Any modifications to docker-compose files
+        - Custom configuration files
+      placeholder: |
+        APP_ENV=development
+        LOG_LEVEL=INFO
+        # Any other relevant config...
+      render: shell
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: |
+        Add any other context about the problem here:
+        - Screenshots (if applicable)
+        - Related issues
+        - Workarounds you've tried
+        - Any other relevant information
+      placeholder: Any additional information...
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      description: Please confirm the following
+      options:
+        - label: I have searched existing issues and this is not a duplicate
+          required: true
+        - label: I have provided all the requested information above
+          required: true
+        - label: I have removed any sensitive information (API keys, passwords, etc.)
+          required: true
+        - label: This issue is related to the FastAPI Docker Stack and not a general Docker/Python question
+          required: true

@@ -1,0 +1,113 @@
+{
+  "FastAPI Endpoint": {
+    "prefix": "fastapi-endpoint",
+    "body": [
+      "@app.${1|get,post,put,delete,patch|}(\"/${2:endpoint}\")",
+      "async def ${3:function_name}(",
+      "    ${4:param}: ${5:type} = ${6:Body(...)}",
+      ") -> ${7:ResponseModel}:",
+      "    \"\"\"",
+      "    ${8:Endpoint description}",
+      "    \"\"\"",
+      "    try:",
+      "        ${9:# Implementation}",
+      "        return ${10:result}",
+      "    except Exception as e:",
+      "        logger.error(f\"Error in ${3:function_name}: {e}\")",
+      "        raise HTTPException(status_code=500, detail=str(e))"
+    ],
+    "description": "FastAPI endpoint template"
+  },
+  "Async Database Query": {
+    "prefix": "async-db",
+    "body": [
+      "async def ${1:function_name}(${2:params}) -> ${3:ReturnType}:",
+      "    \"\"\"${4:Function description}\"\"\"",
+      "    async with get_db_connection() as conn:",
+      "        try:",
+      "            result = await conn.${5|fetch,fetchrow,fetchval,execute|}(\"\"\"",
+      "                ${6:SELECT * FROM table WHERE id = $1}",
+      "            \"\"\", ${7:param})",
+      "            return result",
+      "        except Exception as e:",
+      "            logger.error(f\"Database error: {e}\")",
+      "            raise"
+    ],
+    "description": "Async database query template"
+  },
+  "Test Function": {
+    "prefix": "test-func",
+    "body": [
+      "def test_${1:function_name}():",
+      "    \"\"\"Test ${2:description}\"\"\"",
+      "    # Arrange",
+      "    ${3:setup}",
+      "    ",
+      "    # Act",
+      "    ${4:result = function_under_test()}",
+      "    ",
+      "    # Assert",
+      "    assert ${5:result == expected}",
+      "    print(\"✅ Test passed: ${1:function_name}\")"
+    ],
+    "description": "Test function template"
+  },
+  "Vector Search Query": {
+    "prefix": "vector-search",
+    "body": [
+      "# Generate embedding for query",
+      "query_embedding = embedding_service.generate(\"${1:query_text}\")",
+      "",
+      "# Perform similarity search",
+      "results = await conn.fetch(\"\"\"",
+      "    SELECT ${2:columns},",
+      "           1 - (embedding <=> $1::vector) as similarity",
+      "    FROM ${3:table_name}",
+      "    WHERE embedding IS NOT NULL",
+      "    ORDER BY embedding <=> $1::vector",
+      "    LIMIT ${4:10}",
+      "\"\"\", query_embedding)"
+    ],
+    "description": "pgvector similarity search query"
+  },
+  "MinIO Upload": {
+    "prefix": "minio-upload",
+    "body": [
+      "# Upload to MinIO",
+      "file_content = ${1:data}",
+      "object_name = f\"${2:prefix}/{${3:filename}}\"",
+      "",
+      "client.put_object(",
+      "    bucket_name=\"${4:poc-bucket}\",",
+      "    object_name=object_name,",
+      "    data=io.BytesIO(file_content.encode()),",
+      "    length=len(file_content)",
+      ")"
+    ],
+    "description": "MinIO file upload template"
+  },
+  "Redis Cache": {
+    "prefix": "redis-cache",
+    "body": [
+      "# Check cache",
+      "cache_key = f\"${1:prefix}:{${2:identifier}}\"",
+      "cached_result = await redis_client.get(cache_key)",
+      "",
+      "if cached_result:",
+      "    return json.loads(cached_result)",
+      "",
+      "# Generate result",
+      "result = ${3:generate_result()}",
+      "",
+      "# Store in cache",
+      "await redis_client.setex(",
+      "    cache_key,",
+      "    ${4:3600},  # TTL in seconds",
+      "    json.dumps(result)",
+      ")",
+      "",
+      "return result"
+    ],
+    "description": "Redis caching pattern"
+  }
+}
