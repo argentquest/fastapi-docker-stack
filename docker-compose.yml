@@ -1,12 +1,14 @@
-# V2 POC Docker Compose - 5 Core Containers
-version: '3.8'
+# V2 POC Docker Compose - Development Environment
+# This file defines all the services, networks, and volumes needed to run the application stack.
 
 services:
-  # 1. FastAPI Application with BGE-large embeddings
+  # 1. FastAPI Application: The core backend service.
   app:
+    # Builds the Docker image from the Dockerfile in the current directory.
     build: .
     container_name: v2-poc-app
     restart: unless-stopped
+    # Environment variables passed to the container. Values are sourced from the .env file.
     environment:
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
       - DATABASE_URL=postgresql://pocuser:pocpass@postgres:5432/poc_db
@@ -17,6 +19,7 @@ services:
       - MINIO_SECURE=false
       - APP_ENV=development
       - LOG_LEVEL=INFO
+    # Ensures that the app service starts only after its dependencies are healthy.
     depends_on:
       postgres:
         condition: service_healthy
@@ -26,32 +29,31 @@ services:
         condition: service_healthy
     ports:
       - "8000:8000"
+    # Healthcheck verifies the app is running and responsive.
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
+      # start_period gives the container time to initialize before the healthcheck starts.
       start_period: 40s
 
-  # 2. Nginx Reverse Proxy
-  nginx:
-    image: nginx:1.25-alpine
-    container_name: v2-poc-nginx
+  # 2. Nginx Proxy Manager: Handles reverse proxy, SSL, and routing.
+  npm:
+    image: 'jc21/nginx-proxy-manager:latest'
+    container_name: v2-poc-npm
     restart: unless-stopped
     ports:
-      - "80:80"
+      - '80:80'   # Standard HTTP
+      - '81:81'   # Admin UI
+      - '443:443' # Standard HTTPS
     volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./data/npm/data:/data
+      - ./data/npm/letsencrypt:/etc/letsencrypt
     depends_on:
-      app:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+      - app
 
-  # 3. PostgreSQL with pgvector
+  # 3. PostgreSQL with pgvector: Database for structured data and vector embeddings.
   postgres:
     image: pgvector/pgvector:pg16
     container_name: v2-poc-postgres
@@ -62,7 +64,9 @@ services:
       - POSTGRES_DB=poc_db
       - POSTGRES_INITDB_ARGS=--encoding=UTF-8
     volumes:
+      # Persists database data across container restarts.
       - postgres_data:/var/lib/postgresql/data
+      # Runs the init.sql script on first startup to initialize the database.
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     ports:
       - "5432:5432"
@@ -72,6 +76,7 @@ services:
       timeout: 5s
       retries: 5
       start_period: 30s
+    # Custom command to start postgres with pgvector and performance tuning.
     command: >
       postgres
       -c shared_preload_libraries='vector'
@@ -79,7 +84,7 @@ services:
       -c shared_buffers=256MB
       -c effective_cache_size=1GB
 
-  # 4. MinIO S3-Compatible Storage
+  # 4. MinIO: S3-compatible object storage for unstructured data.
   minio:
     image: minio/minio:RELEASE.2024-12-13T22-06-12Z
     container_name: v2-poc-minio
@@ -90,8 +95,9 @@ services:
     volumes:
       - minio_data:/data
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "9000:9000" # S3 API
+      - "9001:9001" # Web Console
+    # Starts the minio server and exposes the console on port 9001.
     command: server /data --console-address ":9001"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
@@ -100,7 +106,7 @@ services:
       retries: 3
       start_period: 30s
 
-  # 5. Redis Cache
+  # 5. Redis: In-memory cache for session data and frequently accessed information.
   redis:
     image: redis:7.2-alpine
     container_name: v2-poc-redis
@@ -109,6 +115,7 @@ services:
       - redis_data:/data
     ports:
       - "6379:6379"
+    # Custom command to enable persistence and set memory policies.
     command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
@@ -116,7 +123,46 @@ services:
       timeout: 5s
       retries: 3
 
-# Named volumes for data persistence
+  # 6. pgAdmin: Web-based GUI for managing the PostgreSQL database.
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: v2-poc-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@example.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+
+  # 7. Redis Commander: Web-based GUI for managing the Redis cache.
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: v2-poc-redis-commander
+    restart: unless-stopped
+    environment:
+      # Tells Redis Commander how to connect to the redis service.
+      - REDIS_HOSTS=local:redis:6379
+    ports:
+      - "8081:8081"
+    depends_on:
+      - redis
+
+  # 8. Dashboard: A simple menu system to access all web UIs.
+  dashboard:
+    image: nginx:alpine
+    container_name: v2-poc-dashboard
+    restart: unless-stopped
+    ports:
+      - "8082:80"
+    volumes:
+      # Mounts the static HTML file as read-only for security.
+      - ./dashboard:/usr/share/nginx/html:ro
+
+# Named volumes for data persistence across container restarts.
 volumes:
   postgres_data:
     driver: local
@@ -124,8 +170,10 @@ volumes:
     driver: local
   redis_data:
     driver: local
+  pgadmin_data:
+    driver: local
 
-# Network for container communication
+# Defines the network for inter-container communication.
 networks:
   default:
     name: v2-poc-network

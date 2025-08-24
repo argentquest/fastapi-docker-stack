@@ -5,10 +5,10 @@ This guide helps you set up the `fastapi-docker-stack` repository on GitHub and 
 ## 🎯 Repository Information
 
 - **Name**: `fastapi-docker-stack`
-- **Description**: Production-ready FastAPI microservices stack with PostgreSQL+pgvector, Redis, MinIO, and Nginx - fully containerized with Docker. Cost-effective alternative to Azure/AWS services with 90% cost savings.
+- **Description**: Production-ready FastAPI microservices stack with PostgreSQL+pgvector, Redis, MinIO, and Nginx Proxy Manager - fully containerized with Docker. Cost-effective alternative to Azure/AWS services with 90% cost savings.
 - **License**: MIT
 - **Visibility**: Public
-- **Topics**: `fastapi`, `docker`, `microservices`, `postgresql`, `pgvector`, `redis`, `minio`, `nginx`, `ai`, `vector-database`, `self-hosted`, `cost-effective`, `python`, `async`
+- **Topics**: `fastapi`, `docker`, `microservices`, `postgresql`, `pgvector`, `redis`, `minio`, `nginx-proxy-manager`, `ai`, `vector-database`, `self-hosted`, `cost-effective`, `python`, `async`
 
 ## 🚀 GitHub Repository Setup
 
@@ -25,7 +25,7 @@ This guide helps you set up the `fastapi-docker-stack` repository on GitHub and 
 #### Topics/Tags
 Add these topics to help with discoverability:
 ```
-fastapi docker microservices postgresql pgvector redis minio nginx 
+fastapi docker microservices postgresql pgvector redis minio nginx-proxy-manager 
 ai vector-database self-hosted cost-effective python async
 ```
 
@@ -65,7 +65,7 @@ git commit -m "feat: initial FastAPI Docker stack implementation
 - PostgreSQL with pgvector for vector similarity search
 - Redis caching layer
 - MinIO S3-compatible object storage
-- Nginx reverse proxy
+- Nginx Proxy Manager reverse proxy
 - Comprehensive test suite (7 test scripts)
 - Security hardening and input validation
 - Docker Compose configurations (dev and prod)
@@ -94,14 +94,14 @@ FastAPI Docker Stack v1.0.0
 - PostgreSQL + pgvector for vector similarity search
 - Redis caching with connection pooling
 - MinIO S3-compatible object storage
-- Nginx reverse proxy with security headers
+- Nginx Proxy Manager reverse proxy with security headers
 - 90% cost savings vs cloud services
 - Production security hardening
 - Comprehensive test suite
 - Complete CI/CD pipeline
 
 ## 🛠️ What's Included
-- 5 containerized services (FastAPI, PostgreSQL, Redis, MinIO, Nginx)
+- 5 containerized services (FastAPI, PostgreSQL, Redis, MinIO, Nginx Proxy Manager)
 - Production and development Docker Compose configurations
 - 7 comprehensive test scripts
 - Security input validation and sanitization

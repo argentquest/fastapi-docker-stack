@@ -1,6 +1,7 @@
 # V2 POC Docker Compose - Production Configuration
 # This file contains security-hardened configuration for production use
-version: '3.8'
+
+
 
 services:
   # FastAPI Application

@@ -21,7 +21,7 @@
 ### Secondary Objectives
 - Test uv package management in containerized environment
 - Validate Docker Compose orchestration
-- Confirm Nginx reverse proxy configuration
+- Confirm Nginx Proxy Manager reverse proxy configuration
 - Test basic monitoring/logging capabilities
 
 ---
@@ -35,7 +35,7 @@
 ├─────────────────────────────────────────┤
 │                                         │
 │  ┌─────────────┐    ┌─────────────────┐ │
-│  │   Nginx     │    │   FastAPI App   │ │
+│  │   Nginx Proxy Manager     │    │   FastAPI App   │ │
 │  │ (Proxy/SSL) │◄──►│  + BGE-large    │ │
 │  │             │    │  + OpenRouter   │ │
 │  └─────────────┘    └─────────────────┘ │
@@ -158,7 +158,6 @@ async def ai_test_endpoint(
 ### Docker Compose Services
 
 ```yaml
-version: '3.8'
 services:
   # 1. Custom FastAPI application
   app:
@@ -173,13 +172,16 @@ services:
       - redis  
       - minio
 
-  # 2. Nginx reverse proxy
-  nginx:
-    image: nginx:1.25-alpine
+  # 2. Nginx Proxy Manager
+  npm:
+    image: 'jc21/nginx-proxy-manager:latest'
     ports:
-      - "80:80"
+      - '80:80'
+      - '81:81'
+      - '443:443'
     volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./data/npm/data:/data
+      - ./data/npm/letsencrypt:/etc/letsencrypt
     depends_on:
       - app
 
@@ -291,7 +293,7 @@ LIMIT 3;
 
 ### Technical Validation
 - [x] **All 5 containers configured** (docker-compose.yml + docker-compose.prod.yml)
-- [x] **Nginx routes requests properly** (nginx.conf configured)
+- [x] **Nginx Proxy Manager routes requests properly** (nginx.conf configured)
 - [x] **PostgreSQL with pgvector** (init.sql with vector extension)
 - [x] **pgvector 1024 dimensions** (BGE-large-en-v1.5 support)
 - [x] **OpenRouter integration** (DeepSeek R1 configured)
@@ -337,7 +339,7 @@ LIMIT 3;
 Container Resource Allocation:
 - FastAPI App:     512MB RAM, 0.5 CPU
 - PostgreSQL:      1GB RAM,   0.3 CPU  
-- Nginx:           128MB RAM, 0.1 CPU
+- Nginx Proxy Manager:           128MB RAM, 0.1 CPU
 - MinIO:           256MB RAM, 0.2 CPU
 - Redis:           128MB RAM, 0.1 CPU
 ─────────────────────────────────────
@@ -507,7 +509,7 @@ Before deploying to production, implement:
 
 2. **SSL/TLS Configuration**
    - Let's Encrypt certificates
-   - Nginx SSL configuration
+   - Nginx Proxy Manager SSL configuration
    - HTTPS enforcement
 
 3. **Secrets Management**

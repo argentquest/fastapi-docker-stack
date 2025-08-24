@@ -1,7 +1,14 @@
 #!/usr/bin/env python3
 """
-V2 POC Test Runner
-Executes all test scripts in sequence and provides comprehensive results
+V2 POC Master Test Runner
+
+This script automates the execution of all integration and unit tests for the V2 POC.
+It runs each test script in a predefined sequence, captures the results, and provides
+a comprehensive summary report.
+
+The script is designed to be the single source of truth for validating the entire
+application stack, and it returns a specific exit code based on the results to
+support CI/CD pipelines.
 """
 
 import sys
@@ -9,179 +16,117 @@ import subprocess
 import time
 from pathlib import Path
 
-def main():
-    """Run all POC tests in sequence"""
-    print("🚀 V2 POC COMPREHENSIVE TEST SUITE")
-    print("=" * 60)
-    print("Testing all 5 containers: FastAPI, PostgreSQL+pgvector, Redis, MinIO, Nginx")
+def main() -> int:
+    """Main function to execute all test suites."""
+    print("🚀 V2 POC COMPREHENSIVE TEST SUITE 🚀")
     print("=" * 60)
     
-    # Test scripts to run in order
+    # Define the test scripts to be executed in a specific order.
+    # This order ensures that foundational tests (like container health) run first.
     test_scripts = [
-        ("01", "Container Health", "test_01_containers_health.py"),
-        ("02", "PostgreSQL + pgvector", "test_02_database_pgvector.py"),
+        ("01", "Container Health Check", "test_01_containers_health.py"),
+        ("02", "Database & pgvector", "test_02_database_pgvector.py"),
         ("03", "OpenRouter Integration", "test_03_openrouter_integration.py"),
-        ("04", "MinIO Storage", "test_04_minio_storage.py"),
-        ("05", "Redis Cache", "test_05_redis_cache.py"),
-        ("06", "End-to-End Integration", "test_06_end_to_end.py")
+        ("04", "MinIO Storage Operations", "test_04_minio_storage.py"),
+        ("05", "Redis Cache Operations", "test_05_redis_cache.py"),
+        ("06", "End-to-End Workflow", "test_06_end_to_end.py")
     ]
     
     test_results = []
     overall_start_time = time.time()
     
-    print(f"\n🔍 Running {len(test_scripts)} test suites...\n")
+    print(f"\n🔍 Found {len(test_scripts)} test suites to run...\n")
     
+    # --- Test Execution Loop ---
     for test_num, test_name, script_name in test_scripts:
-        print(f"▶️  TEST {test_num}: {test_name}")
+        print(f"▶️  RUNNING TEST {test_num}: {test_name}")
         print("-" * 40)
         
         script_path = Path(__file__).parent / "tests" / script_name
         
         if not script_path.exists():
-            print(f"❌ FAILED: Test script not found: {script_name}")
+            print(f"❌ FAILED: Test script not found at {script_path}")
             test_results.append({
-                'test_num': test_num,
-                'name': test_name,
-                'status': 'MISSING',
-                'duration': 0,
+                'name': test_name, 'status': 'MISSING', 'duration': 0,
                 'error': f"Script not found: {script_name}"
             })
             continue
         
-        # Run the test script
         start_time = time.time()
         try:
+            # Execute each test script as a separate process.
+            # This isolates the tests and captures their stdout/stderr.
             result = subprocess.run(
                 [sys.executable, str(script_path)],
-                cwd=script_path.parent.parent,  # Run from V2 directory
-                capture_output=True,
-                text=True,
-                timeout=120  # 2 minutes timeout per test
+                capture_output=True, text=True, timeout=120, check=False
             )
-            
             duration = time.time() - start_time
             
+            # Assess the outcome based on the return code.
             if result.returncode == 0:
                 status = "PASSED"
                 error = None
-                print(f"✅ PASSED ({duration:.1f}s)")
+                print(f"✅ PASSED in {duration:.2f}s")
             else:
                 status = "FAILED"
-                error = result.stderr or "Unknown error"
-                print(f"❌ FAILED ({duration:.1f}s)")
-                if result.stdout:
-                    print("STDOUT:")
-                    print(result.stdout[-500:])  # Show last 500 chars
-                if result.stderr:
-                    print("STDERR:")
-                    print(result.stderr[-500:])
+                error = result.stderr.strip() or result.stdout.strip()
+                print(f"❌ FAILED in {duration:.2f}s")
+                print(f"   ERROR: {error[:200]}..." if len(error) > 200 else f"   ERROR: {error}")
             
         except subprocess.TimeoutExpired:
             duration = time.time() - start_time
             status = "TIMEOUT"
-            error = "Test timed out after 120 seconds"
-            print(f"⏱️  TIMEOUT ({duration:.1f}s)")
+            error = "Test exceeded the 120-second timeout."
+            print(f"⏱️  TIMEOUT after {duration:.2f}s")
             
         except Exception as e:
             duration = time.time() - start_time
             status = "ERROR"
-            error = str(e)
-            print(f"💥 ERROR ({duration:.1f}s): {e}")
+            error = f"An unexpected error occurred: {e}"
+            print(f"💥 ERROR: {e}")
         
         test_results.append({
-            'test_num': test_num,
-            'name': test_name,
-            'status': status,
-            'duration': duration,
-            'error': error
+            'name': test_name, 'status': status, 
+            'duration': duration, 'error': error
         })
-        
-        print()  # Add spacing between tests
+        print()
     
-    # Print comprehensive results
+    # --- Results Summary ---
     overall_duration = time.time() - overall_start_time
+    passed_count = sum(1 for t in test_results if t['status'] == 'PASSED')
+    failed_count = len(test_results) - passed_count
     
     print("\n" + "=" * 60)
-    print("📊 COMPREHENSIVE TEST RESULTS")
+    print("📊 TEST SUITE SUMMARY")
     print("=" * 60)
-    
-    passed_tests = [t for t in test_results if t['status'] == 'PASSED']
-    failed_tests = [t for t in test_results if t['status'] not in ['PASSED']]
-    
-    print(f"🎯 Total Tests: {len(test_results)}")
-    print(f"✅ Passed: {len(passed_tests)}")
-    print(f"❌ Failed: {len(failed_tests)}")
-    print(f"⏱️  Total Duration: {overall_duration:.1f}s")
-    
-    print("\n📋 Individual Test Results:")
+    print(f"Total Tests: {len(test_results)} | ✅ Passed: {passed_count} | ❌ Failed: {failed_count}")
+    print(f"⏱️  Total Duration: {overall_duration:.2f}s")
     print("-" * 60)
     
     for test in test_results:
-        status_emoji = {
-            'PASSED': '✅',
-            'FAILED': '❌', 
-            'TIMEOUT': '⏱️',
-            'ERROR': '💥',
-            'MISSING': '❓'
-        }.get(test['status'], '❓')
-        
-        print(f"{status_emoji} TEST {test['test_num']}: {test['name']:<25} "
-              f"[{test['status']:<7}] ({test['duration']:.1f}s)")
-        
+        status_emoji = {'PASSED': '✅', 'FAILED': '❌', 'TIMEOUT': '⏱️', 'ERROR': '💥', 'MISSING': '❓'}
+        print(f"{status_emoji.get(test['status'])} {test['name']:<30} [{test['status']:<7}] ({test['duration']:.2f}s)")
         if test['error']:
-            print(f"    └─ Error: {test['error'][:80]}{'...' if len(test['error']) > 80 else ''}")
+            # Indent the error message for readability.
+            error_line = test['error'].replace('\n', ' ').strip()
+            print(f"    └─ Error: {error_line[:100]}{'...' if len(error_line) > 100 else ''}")
     
-    # Final assessment
+    # --- Final Assessment & Exit Code ---
     print("\n" + "=" * 60)
-    
-    if len(passed_tests) == len(test_results):
-        print("🎉 ALL TESTS PASSED! V2 POC IS READY FOR DEPLOYMENT!")
-        print("✨ All 5 containers are working together perfectly:")
-        print("   • FastAPI application server")
-        print("   • PostgreSQL with pgvector extension")
-        print("   • OpenRouter AI integration")
-        print("   • MinIO S3-compatible storage")
-        print("   • Redis caching layer")
-        print("   • Nginx reverse proxy")
+    if failed_count == 0:
+        print("🎉 ALL TESTS PASSED! The V2 stack is healthy and integrated correctly.")
         return_code = 0
-        
-    elif len(passed_tests) >= 4:  # Allow some flexibility
-        print("⚠️  MOSTLY SUCCESSFUL - Minor issues detected")
-        print(f"   {len(passed_tests)}/{len(test_results)} tests passed")
-        print("   Review failed tests and consider if they're critical")
-        return_code = 1
-        
     else:
-        print("❌ CRITICAL ISSUES DETECTED")
-        print(f"   Only {len(passed_tests)}/{len(test_results)} tests passed")
-        print("   🚨 DO NOT DEPLOY - Fix failing tests first")
-        return_code = 2
-    
-    print("=" * 60)
-    
-    # Provide next steps
-    if failed_tests:
+        print("❌ SOME TESTS FAILED. Please review the errors above.")
         print("\n📝 NEXT STEPS:")
-        print("1. Check that all containers are running: docker-compose ps")
-        print("2. Check container logs: docker-compose logs [service-name]")
-        print("3. Verify environment variables in .env file")
-        print("4. Re-run individual failed tests:")
-        
-        for test in failed_tests:
-            script_name = None
-            for _, _, script in test_scripts:
-                if test['test_num'] in script:
-                    script_name = script
-                    break
-            if script_name:
-                print(f"   python tests/{script_name}")
-    else:
-        print("\n🚀 READY FOR NEXT PHASE:")
-        print("1. Deploy to development VPS")
-        print("2. Run production-like tests")
-        print("3. Begin gradual migration from Azure")
+        print("1. Check container logs: `docker-compose logs <service_name>`")
+        print("2. Verify your `.env` file has the correct credentials.")
+        print("3. Re-run failed tests individually for more detailed output.")
+        return_code = 1
+    print("=" * 60)
     
     return return_code
 
 if __name__ == '__main__':
+    # Exit with a status code indicating success (0) or failure (non-zero).
     sys.exit(main())

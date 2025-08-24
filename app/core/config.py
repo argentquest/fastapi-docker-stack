@@ -1,78 +1,71 @@
 # V2 POC Configuration
+"""
+This module defines the application's configuration using Pydantic's BaseSettings.
+
+It allows for type-validated settings that can be loaded from environment variables
+or a .env file, making the application's configuration robust and easy to manage.
+"""
+
 import os
-import logging
 from pydantic_settings import BaseSettings
 from pydantic import Field, validator
 from typing import Optional
 
-logger = logging.getLogger(__name__)
-
 class Settings(BaseSettings):
-    """V2 POC Application Settings"""
+    """
+    A Pydantic model for managing all application settings.
     
-    # Environment
-    APP_ENV: str = Field(default="development", alias="APP_ENV")
-    LOG_LEVEL: str = Field(default="INFO", alias="LOG_LEVEL")
+    Attributes are mapped to environment variables (case-sensitive).
+    Default values are provided for development, but can be overridden.
+    """
     
-    # Database Configuration
-    DATABASE_URL: str = Field(alias="DATABASE_URL")
-    POSTGRES_USER: str = Field(default="pocuser", alias="POSTGRES_USER")
-    POSTGRES_PASSWORD: str = Field(default="pocpass", alias="POSTGRES_PASSWORD") 
-    POSTGRES_DB: str = Field(default="poc_db", alias="POSTGRES_DB")
+    # --- General Application Settings ---
+    APP_ENV: str = Field(default="development", description="The application environment (e.g., development, production).")
+    LOG_LEVEL: str = Field(default="INFO", description="The logging level (e.g., DEBUG, INFO, WARNING, ERROR).")
     
-    # Redis Configuration
-    REDIS_URL: str = Field(default="redis://redis:6379", alias="REDIS_URL")
+    # --- Database Configuration (PostgreSQL) ---
+    DATABASE_URL: str = Field(description="The full connection string for the PostgreSQL database.")
+    DB_POOL_MIN_SIZE: int = Field(default=2, ge=1, description="Minimum number of connections in the database pool.")
+    DB_POOL_MAX_SIZE: int = Field(default=10, ge=1, description="Maximum number of connections in the database pool.")
     
-    # MinIO Configuration
-    MINIO_ENDPOINT: str = Field(default="minio:9000", alias="MINIO_ENDPOINT")
-    MINIO_ACCESS_KEY: str = Field(default="minioadmin", alias="MINIO_ACCESS_KEY")
-    MINIO_SECRET_KEY: str = Field(default="minioadmin123", alias="MINIO_SECRET_KEY")
-    MINIO_BUCKET_NAME: str = Field(default="poc-bucket", alias="MINIO_BUCKET_NAME")
-    MINIO_SECURE: bool = Field(default=False, alias="MINIO_SECURE")
+    # --- Cache Configuration (Redis) ---
+    REDIS_URL: str = Field(default="redis://redis:6379", description="The connection URL for the Redis server.")
     
-    # OpenRouter Configuration
-    OPENROUTER_API_KEY: Optional[str] = Field(default=None, alias="OPENROUTER_API_KEY")
-    OPENROUTER_BASE_URL: str = Field(default="https://openrouter.ai/api/v1", alias="OPENROUTER_BASE_URL")
-    OPENROUTER_SITE_URL: Optional[str] = Field(default=None, alias="OPENROUTER_SITE_URL") 
-    OPENROUTER_APP_NAME: Optional[str] = Field(default="InkAndQuill-V2-POC", alias="OPENROUTER_APP_NAME")
+    # --- Object Storage Configuration (MinIO) ---
+    MINIO_ENDPOINT: str = Field(default="minio:9000", description="The endpoint URL for the MinIO server.")
+    MINIO_ACCESS_KEY: str = Field(default="minioadmin", description="The access key for MinIO.")
+    MINIO_SECRET_KEY: str = Field(default="minioadmin123", description="The secret key for MinIO.")
+    MINIO_BUCKET_NAME: str = Field(default="poc-bucket", description="The default bucket to use for object storage.")
+    MINIO_SECURE: bool = Field(default=False, description="Whether to use HTTPS for the MinIO connection.")
     
-    # AI Model Configuration
-    DEFAULT_MODEL: str = Field(default="deepseek/deepseek-r1", alias="DEFAULT_MODEL")
-    
-    # Connection Pool Configuration
-    DB_POOL_MIN_SIZE: int = Field(default=2, ge=1, alias="DB_POOL_MIN_SIZE")
-    DB_POOL_MAX_SIZE: int = Field(default=10, ge=1, alias="DB_POOL_MAX_SIZE")
-    DB_COMMAND_TIMEOUT: int = Field(default=60, ge=1, alias="DB_COMMAND_TIMEOUT")
-    
-    # Redis Configuration
-    REDIS_MAX_CONNECTIONS: int = Field(default=10, ge=1, alias="REDIS_MAX_CONNECTIONS")
-    REDIS_PASSWORD: Optional[str] = Field(default=None, alias="REDIS_PASSWORD")
-    
-    # Security Configuration
-    API_KEY: Optional[str] = Field(default=None, alias="API_KEY")
-    ALLOWED_ORIGINS: str = Field(default="http://localhost:3000,http://localhost:8000", alias="ALLOWED_ORIGINS")
-    
-    # Rate Limiting
-    RATE_LIMIT_REQUESTS: int = Field(default=100, ge=1, alias="RATE_LIMIT_REQUESTS")
-    RATE_LIMIT_PERIOD: int = Field(default=60, ge=1, alias="RATE_LIMIT_PERIOD")
+    # --- AI Service Configuration (OpenRouter) ---
+    OPENROUTER_API_KEY: str = Field(description="The API key for authenticating with OpenRouter.")
+    OPENROUTER_BASE_URL: str = Field(default="https://openrouter.ai/api/v1", description="The base URL for the OpenRouter API.")
+    OPENROUTER_SITE_URL: str = Field(default="http://localhost:8000", description="The site URL to send as a referrer to OpenRouter.")
+    OPENROUTER_APP_NAME: str = Field(default="InkAndQuill-V2-POC", description="The application name to send to OpenRouter.")
+    DEFAULT_MODEL: str = Field(default="deepseek/deepseek-r1", description="The default AI model to use for generation.")
     
     class Config:
+        """Pydantic configuration settings."""
+        # Load environment variables from a .env file.
         env_file = ".env"
+        # Ensure that environment variable names are matched case-sensitively.
         case_sensitive = True
-        
-    @validator("DATABASE_URL")
-    def validate_database_url(cls, v):
-        """Validate database URL format"""
-        if not v.startswith("postgresql://"):
-            raise ValueError("DATABASE_URL must start with postgresql://")
-        return v
-    
-    @validator("OPENROUTER_API_KEY")
-    def validate_api_key(cls, v):
-        """Ensure API key is set in production"""
-        if not v or v == "your_openrouter_api_key_here":
-            raise ValueError("Valid OPENROUTER_API_KEY must be set")
-        return v
+        # Allows for extra fields not defined in the model.
+        extra = 'ignore'
 
-# Global settings instance
-settings = Settings()
+    @validator("DATABASE_URL", pre=True, always=True)
+    def assemble_db_connection(cls, v, values):
+        """Assembles the DATABASE_URL from other PG settings if it's not provided."""
+        if isinstance(v, str):
+            return v
+        return f"postgresql://{values.get('POSTGRES_USER')}:{values.get('POSTGRES_PASSWORD')}@postgres:5432/{values.get('POSTGRES_DB')}"
+
+# Create a single, global instance of the Settings.
+# This instance will be imported and used by other parts of the application
+# to access configuration values.
+try:
+    settings = Settings()
+except Exception as e:
+    # This provides a helpful error message if configuration fails on startup.
+    raise RuntimeError(f"Failed to load application settings. Please check your .env file and environment variables. Error: {e}")

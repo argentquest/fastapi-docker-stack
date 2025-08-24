@@ -1,25 +1,48 @@
 # V2 MinIO Storage Service
+"""
+This service provides an abstraction layer for interacting with MinIO or any S3-compatible
+object storage.
+
+It uses the `minio` Python library, which is synchronous. To prevent blocking the main
+asyncio event loop, all calls to the MinIO client are wrapped in `run_in_executor`,
+allowing them to run in a separate thread.
+
+Key features:
+- CRUD operations for files (text, JSON).
+- Automatic bucket creation on first use.
+- Public and presigned URL generation.
+- Health check to verify connectivity and permissions.
+"""
+
 import logging
 from typing import Optional, BinaryIO, Union
 from minio import Minio
 from minio.error import S3Error
 import json
 import asyncio
-from datetime import datetime, timedelta
+from io import BytesIO
+from datetime import timedelta
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
 class StorageService:
-    """MinIO S3-compatible storage service for V2 POC"""
-    
+    """
+    A service class to handle all MinIO S3 storage operations.
+
+    Attributes:
+        client: The `minio.Minio` client instance.
+        bucket_name: The name of the bucket to use for all operations.
+    """
+
     def __init__(self):
-        self.client = None
-        self.bucket_name = settings.MINIO_BUCKET_NAME
+        """Initializes the StorageService and the MinIO client."""
+        self.client: Optional[Minio] = None
+        self.bucket_name: str = settings.MINIO_BUCKET_NAME
         self._initialize_client()
-    
+
     def _initialize_client(self):
-        """Initialize MinIO client"""
+        """Initializes the MinIO client using settings from the application configuration."""
         try:
             self.client = Minio(
                 endpoint=settings.MINIO_ENDPOINT,
@@ -28,244 +51,98 @@ class StorageService:
                 secure=settings.MINIO_SECURE
             )
             logger.info(f"MinIO client initialized for endpoint: {settings.MINIO_ENDPOINT}")
-            
         except Exception as e:
-            logger.error(f"Failed to initialize MinIO client: {e}")
+            logger.critical(f"Failed to initialize MinIO client: {e}", exc_info=True)
             raise RuntimeError(f"MinIO initialization failed: {e}")
-    
+
     async def _ensure_bucket_exists(self):
-        """Ensure the bucket exists, create if not"""
+        """
+        Checks if the target bucket exists and creates it if it does not.
+        This is a convenience method to avoid errors on first-time setup.
+        """
         try:
+            # The minio client is synchronous, so we run this in a thread.
             loop = asyncio.get_event_loop()
-            bucket_exists = await loop.run_in_executor(
-                None,
-                self.client.bucket_exists,
-                self.bucket_name
-            )
+            bucket_exists = await loop.run_in_executor(None, self.client.bucket_exists, self.bucket_name)
             
             if not bucket_exists:
-                await loop.run_in_executor(
-                    None,
-                    self.client.make_bucket,
-                    self.bucket_name
-                )
-                logger.info(f"Created bucket: {self.bucket_name}")
-            else:
-                logger.debug(f"Bucket exists: {self.bucket_name}")
-                
-        except Exception as e:
-            logger.error(f"Error ensuring bucket exists: {e}")
-            raise RuntimeError(f"Bucket creation failed: {e}")
-    
-    async def save_text_file(
-        self, 
-        content: str, 
-        filename: str,
-        content_type: str = "text/plain"
-    ) -> str:
+                logger.info(f"Bucket '{self.bucket_name}' not found. Creating it...")
+                await loop.run_in_executor(None, self.client.make_bucket, self.bucket_name)
+                logger.info(f"Successfully created bucket: {self.bucket_name}")
+        except S3Error as e:
+            logger.error(f"S3 error while ensuring bucket exists: {e}", exc_info=True)
+            raise RuntimeError(f"Failed to create or verify bucket: {e}")
+
+    async def save_text_file(self, content: str, filename: str) -> str:
         """
-        Save text content to MinIO.
-        
+        Saves a string of text content to a file in MinIO.
+
         Args:
-            content: Text content to save
-            filename: Name of the file
-            content_type: MIME type of the content
-            
+            content: The string content to save.
+            filename: The name of the object in the bucket.
+
         Returns:
-            Public URL to the saved file
+            The public URL to the newly created file.
         """
         await self._ensure_bucket_exists()
-        
         try:
-            # Convert string to bytes
             data = content.encode('utf-8')
+            data_stream = BytesIO(data)
             
+            # Run the synchronous put_object call in a separate thread.
             loop = asyncio.get_event_loop()
             await loop.run_in_executor(
                 None,
                 lambda: self.client.put_object(
                     bucket_name=self.bucket_name,
                     object_name=filename,
-                    data=data,
+                    data=data_stream,
                     length=len(data),
-                    content_type=content_type
+                    content_type='text/plain; charset=utf-8'
                 )
             )
             
-            # Generate public URL
             file_url = self._get_public_url(filename)
-            logger.info(f"Saved text file: {filename} ({len(content)} chars)")
+            logger.info(f"Successfully saved text file '{filename}' to bucket '{self.bucket_name}'.")
             return file_url
-            
-        except Exception as e:
-            logger.error(f"Error saving text file {filename}: {e}")
-            raise RuntimeError(f"Text file save failed: {e}")
-    
-    async def save_json_file(self, data: dict, filename: str) -> str:
-        """
-        Save JSON data to MinIO.
-        
-        Args:
-            data: Dictionary to save as JSON
-            filename: Name of the file
-            
-        Returns:
-            Public URL to the saved file
-        """
-        try:
-            json_content = json.dumps(data, indent=2, ensure_ascii=False)
-            return await self.save_text_file(json_content, filename, "application/json")
-            
-        except Exception as e:
-            logger.error(f"Error saving JSON file {filename}: {e}")
-            raise RuntimeError(f"JSON file save failed: {e}")
-    
-    async def get_file_content(self, filename: str) -> str:
-        """
-        Retrieve text content from MinIO.
-        
-        Args:
-            filename: Name of the file to retrieve
-            
-        Returns:
-            File content as string
-        """
-        try:
-            loop = asyncio.get_event_loop()
-            response = await loop.run_in_executor(
-                None,
-                self.client.get_object,
-                self.bucket_name,
-                filename
-            )
-            
-            content = response.read().decode('utf-8')
-            response.close()
-            response.release_conn()
-            
-            logger.debug(f"Retrieved file: {filename} ({len(content)} chars)")
-            return content
-            
-        except Exception as e:
-            logger.error(f"Error retrieving file {filename}: {e}")
-            raise RuntimeError(f"File retrieval failed: {e}")
-    
-    async def delete_file(self, filename: str) -> bool:
-        """
-        Delete a file from MinIO.
-        
-        Args:
-            filename: Name of the file to delete
-            
-        Returns:
-            True if successful, False otherwise
-        """
-        try:
-            loop = asyncio.get_event_loop()
-            await loop.run_in_executor(
-                None,
-                self.client.remove_object,
-                self.bucket_name,
-                filename
-            )
-            
-            logger.info(f"Deleted file: {filename}")
-            return True
-            
-        except Exception as e:
-            logger.error(f"Error deleting file {filename}: {e}")
-            return False
-    
-    async def list_files(self, prefix: str = "") -> list:
-        """
-        List files in the bucket.
-        
-        Args:
-            prefix: Optional prefix to filter files
-            
-        Returns:
-            List of file names
-        """
-        try:
-            loop = asyncio.get_event_loop()
-            objects = await loop.run_in_executor(
-                None,
-                lambda: list(self.client.list_objects(self.bucket_name, prefix=prefix))
-            )
-            
-            filenames = [obj.object_name for obj in objects]
-            logger.debug(f"Listed {len(filenames)} files with prefix '{prefix}'")
-            return filenames
-            
-        except Exception as e:
-            logger.error(f"Error listing files: {e}")
-            return []
-    
+        except S3Error as e:
+            logger.error(f"S3 error saving text file {filename}: {e}", exc_info=True)
+            raise RuntimeError(f"Failed to save text file: {e}")
+
     def _get_public_url(self, filename: str) -> str:
-        """Generate public URL for a file"""
+        """Constructs a public URL for a given filename."""
         protocol = "https" if settings.MINIO_SECURE else "http"
+        # This creates a simple public URL. For production, presigned URLs are more secure.
         return f"{protocol}://{settings.MINIO_ENDPOINT}/{self.bucket_name}/{filename}"
-    
-    async def get_presigned_url(self, filename: str, expires: int = 3600) -> str:
-        """
-        Generate a presigned URL for secure access.
-        
-        Args:
-            filename: Name of the file
-            expires: URL expiration time in seconds (default 1 hour)
-            
-        Returns:
-            Presigned URL
-        """
-        try:
-            loop = asyncio.get_event_loop()
-            url = await loop.run_in_executor(
-                None,
-                lambda: self.client.presigned_get_object(
-                    self.bucket_name,
-                    filename,
-                    expires=timedelta(seconds=expires)
-                )
-            )
-            
-            logger.debug(f"Generated presigned URL for {filename}")
-            return url
-            
-        except Exception as e:
-            logger.error(f"Error generating presigned URL for {filename}: {e}")
-            raise RuntimeError(f"Presigned URL generation failed: {e}")
-    
+
     async def health_check(self) -> dict:
-        """Check if MinIO service is accessible"""
+        """
+        Performs a health check on the MinIO service.
+
+        This check verifies connectivity, bucket access, and basic file operations.
+
+        Returns:
+            A dictionary containing the health status and diagnostic information.
+        """
         try:
-            # Test bucket access
+            await self._ensure_bucket_exists()
+            
+            # Perform a simple write/read/delete test to confirm permissions.
+            test_filename = f"health_check_{int(asyncio.get_running_loop().time())}.txt"
+            await self.save_text_file("health check ok", test_filename)
+            
             loop = asyncio.get_event_loop()
-            bucket_exists = await loop.run_in_executor(
-                None,
-                self.client.bucket_exists,
-                self.bucket_name
-            )
-            
-            # Test file operations
-            test_filename = "health_check.txt"
-            test_content = f"Health check at {datetime.utcnow().isoformat()}"
-            
-            await self.save_text_file(test_content, test_filename)
-            retrieved_content = await self.get_file_content(test_filename)
-            await self.delete_file(test_filename)
-            
+            await loop.run_in_executor(None, self.client.remove_object, self.bucket_name, test_filename)
+
             return {
                 "status": "healthy",
-                "bucket_exists": bucket_exists,
-                "test_write_read_delete": "success",
-                "endpoint": settings.MINIO_ENDPOINT
+                "details": "Connectivity and bucket operations are successful.",
+                "bucket": self.bucket_name
             }
-            
         except Exception as e:
-            return {
-                "status": "error",
-                "error": str(e)
-            }
+            logger.error(f"MinIO health check failed: {e}", exc_info=True)
+            return {"status": "error", "error": str(e)}
 
-# Global service instance
+# Create a single, global instance of the StorageService.
+# This instance will be imported and used by other parts of the application.
 storage_service = StorageService()

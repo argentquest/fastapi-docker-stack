@@ -2,7 +2,7 @@
 
 ## 🚀 Overview
 
-A production-ready FastAPI microservices stack with PostgreSQL+pgvector, Redis, MinIO, and Nginx - fully containerized with Docker. This architecture provides a cost-effective alternative to cloud services, offering up to 90% cost savings (from $400-500/month to $45-60/month) while maintaining enterprise-grade functionality.
+A production-ready FastAPI microservices stack with PostgreSQL+pgvector, Redis, MinIO, and Nginx Proxy Manager - fully containerized with Docker. This architecture provides a cost-effective alternative to cloud services, offering up to 90% cost savings (from $400-500/month to $45-60/month) while maintaining enterprise-grade functionality.
 
 ## 🎯 Project Goals
 
@@ -18,7 +18,7 @@ A production-ready FastAPI microservices stack with PostgreSQL+pgvector, Redis, 
 
 ```
 ┌─────────────────────────────────────────────────┐
-│                  Nginx (Port 80)                 │
+│             Nginx Proxy Manager (80, 81, 443)    │
 │              (Reverse Proxy & SSL)               │
 └────────────────────┬────────────────────────────┘
                      │
@@ -48,7 +48,7 @@ A production-ready FastAPI microservices stack with PostgreSQL+pgvector, Redis, 
 | **Object Storage** | Azure Blob Storage | MinIO (S3-compatible) | 100% |
 | **Database** | Azure PostgreSQL | PostgreSQL 16 | 90% |
 | **Caching** | Azure Redis | Redis 7.2 | 100% |
-| **CDN/Proxy** | Azure CDN | Nginx | 100% |
+| **CDN/Proxy** | Azure CDN | Nginx Proxy Manager | 100% |
 
 ## 📋 Prerequisites
 
@@ -134,6 +134,164 @@ python tests/test_06_end_to_end.py
 
 # Test with book content (500KB+ text)
 python tests/test_vector_with_book.py
+```
+
+## Ports and Services Reference
+
+| Service | Purpose | Port(s) | Access URL / Details |
+| :--- | :--- | :--- | :--- |
+| **FastAPI App** | Main Application API | `8000` | `http://localhost:8000` (direct) or `http://localhost/docs` (via Nginx) |
+| **Nginx Proxy** | Reverse Proxy & Admin | `80`, `443`, `81` | `http://localhost` (proxied apps), `http://localhost:81` (admin UI) |
+| **PostgreSQL** | Database Server | `5432` | Connect via SQL client at `localhost:5432` |
+| **MinIO S3** | S3 API Endpoint | `9000` | `http://localhost:9000` |
+| **MinIO Console** | S3 Web UI | `9001` | `http://localhost:9001` |
+| **Redis** | Cache Server | `6379` | Connect via Redis client at `localhost:6379` |
+| **pgAdmin** | PostgreSQL Web UI | `5050` | `http://localhost:5050` |
+| **Redis Commander**| Redis Web UI | `8081` | `http://localhost:8081` |
+| **Dashboard** | Central Menu/Dashboard | `8082` | `http://localhost:8082` |
+
+
+## ✅ Infrastructure Validation Plan
+
+This plan outlines the steps to verify that all components of the infrastructure are running correctly after deployment.
+
+### Step 1: Start and Check All Containers
+
+1.  **Start the stack:** From the project root, run the following command. The `-d` flag runs the containers in detached mode.
+    ```bash
+    docker-compose up -d
+    ```
+2.  **Check container status:** Run the `docker-compose ps` command to ensure all containers are running and healthy. You should see a `State` of `Up` and `Status` indicating "healthy" for all services with healthchecks.
+
+### Step 2: Verify Web UIs and Services
+
+Go through the following URLs to ensure each web interface is accessible:
+
+1.  **Service Dashboard:**
+    *   **URL:** [http://localhost:8082](http://localhost:8082)
+    *   **Check:** The dashboard loads and all links to other services are present.
+
+2.  **Nginx Proxy Manager:**
+    *   **URL:** [http://localhost:81](http://localhost:81)
+    *   **Check:** The login page appears. You can log in with the default credentials (`admin@example.com` / `changeme`).
+
+3.  **FastAPI Application:**
+    *   **URL:** [http://localhost/docs](http://localhost/docs) (served via Nginx)
+    *   **Check:** The Swagger UI for the API documentation loads correctly.
+    *   **URL:** [http://localhost/health](http://localhost/health)
+    *   **Check:** The health check endpoint returns a JSON response with a `"status": "healthy"` message.
+
+4.  **MinIO Console:**
+    *   **URL:** [http://localhost:9001](http://localhost:9001)
+    *   **Check:** The MinIO login page appears. You can log in with the default credentials (`minioadmin` / `minioadmin123`).
+
+5.  **pgAdmin:**
+    *   **URL:** [http://localhost:5050](http://localhost:5050)
+    *   **Check:** The pgAdmin login page appears. You can log in with (`admin@example.com` / `admin`). To fully validate, add the `postgres` server using the details from the "Connecting to Services" section.
+
+6.  **Redis Commander:**
+    *   **URL:** [http://localhost:8081](http://localhost:8081)
+    *   **Check:** The Redis Commander interface loads and shows a connection to the `redis` instance.
+
+### Step 3: Verify Backend Service Connectivity (CLI)
+
+1.  **PostgreSQL:**
+    *   **Action:** Connect to the database using pgAdmin or another SQL client.
+    *   **Check:** Run the following SQL query to ensure the `vector` extension is enabled:
+        ```sql
+        SELECT * FROM pg_extension WHERE extname = 'vector';
+        ```
+    *   **Expected Result:** The query should return one row with details about the `vector` extension.
+
+2.  **Redis:**
+    *   **Action:** Run the following command to connect to the Redis container and ping the server:
+        ```bash
+        docker exec -it v2-poc-redis redis-cli ping
+        ```
+    *   **Expected Result:** The command should return `PONG`.
+
+### Step 4: Run the Automated Test Suite
+
+The most comprehensive validation is to run the project's end-to-end tests.
+
+1.  **Action:** Run the main test script from your activated Python virtual environment.
+    ```bash
+    python run_all_tests.py
+    ```
+2.  **Check:** All tests should pass, indicating that all services are not only running but also correctly integrated and functioning as expected.
+
+## 🗄️ Database Connectivity
+
+You can connect to the PostgreSQL database using any standard SQL client. Here are the connection details for DBeaver:
+
+-   **Connection Type:** PostgreSQL
+-   **Host:** `localhost`
+-   **Port:** `5432`
+-   **Database:** `poc_db`
+-   **Username:** `pocuser`
+-   **Password:** `pocpass` (or the value you set in your `.env` file)
+
+**Note:** Ensure the Docker containers are running before attempting to connect.
+
+## 🔌 Connecting to Services
+
+Here's how to connect to the different services running in the Docker containers:
+
+### Nginx Proxy Manager
+
+-   **Web UI:** [http://localhost:81](http://localhost:81)
+-   **Default Email:** `admin@example.com`
+-   **Default Password:** `changeme`
+
+After logging in for the first time, you will be prompted to change the default credentials.
+
+### FastAPI Application (app)
+
+-   **API Docs (Swagger UI):** [http://localhost/docs](http://localhost/docs)
+-   **Health Check:** [http://localhost/health](http://localhost/health)
+
+The FastAPI application is served through the Nginx Proxy Manager on port 80.
+
+### MinIO (S3 Storage)
+
+-   **S3 API Endpoint:** `localhost:9000`
+-   **Console (Web UI):** [http://localhost:9001](http://localhost:9001)
+-   **Access Key:** `minioadmin`
+-   **Secret Key:** `minioadmin123` (or the value you set in your `.env` file)
+
+You can use any S3-compatible client (like `s3cmd` or the AWS CLI) to interact with the S3 API.
+
+### pgAdmin (Database Management)
+
+-   **Web UI:** [http://localhost:5050](http://localhost:5050)
+-   **Default Email:** `admin@example.com`
+-   **Default Password:** `admin`
+
+After logging in, you will need to add a new server connection with the following details:
+*   **Host:** `postgres`
+*   **Port:** `5432`
+*   **Username:** `pocuser`
+*   **Password:** `pocpass` (or the value you set in your `.env` file)
+
+### Redis Commander (Web UI for Redis)
+
+-   **Web UI:** [http://localhost:8081](http://localhost:8081)
+
+### Redis (Cache)
+
+You can connect to the Redis container using `redis-cli`:
+
+```bash
+# Connect to the Redis container
+docker exec -it v2-poc-redis redis-cli
+
+# Ping the server to test the connection
+127.0.0.1:6379> ping
+PONG
+
+# If you have a password set in your .env file, you will need to authenticate
+127.0.0.1:6379> AUTH your-redis-password
+OK
 ```
 
 ## 📚 API Documentation
@@ -267,9 +425,10 @@ V2/
 │   ├── test_06_end_to_end.py
 │   └── test_vector_with_book.py
 ├── datafiles/
-│   └── Andersen's Fairy Tales.txt  # Test data
-├── nginx/
-│   └── nginx.conf            # Reverse proxy config
+│   ├── Andersen's Fairy Tales.txt  # Test data
+│   └── npm/
+│       ├── data/
+│       └── letsencrypt/
 ├── .vscode/                  # VS Code configuration
 ├── docker-compose.yml        # Development setup
 ├── docker-compose.prod.yml   # Production setup
