@@ -1,4 +1,3 @@
-
 # V2 POC FastAPI Application
 """
 Main application file for the V2 Proof of Concept.

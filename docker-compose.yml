@@ -10,7 +10,8 @@ services:
     restart: unless-stopped
     # Environment variables passed to the container. Values are sourced from the .env file.
     environment:
-      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - OPENROUTER_API_KEY=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
+      - DEFAULT_MODEL=openai/gpt-5-nano
       - DATABASE_URL=postgresql://pocuser:pocpass@postgres:5432/poc_db
       - REDIS_URL=redis://redis:6379
       - MINIO_ENDPOINT=minio:9000
@@ -32,11 +33,11 @@ services:
     # Healthcheck verifies the app is running and responsive.
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s
-      timeout: 10s
+      interval: 45s
+      timeout: 120s
       retries: 3
       # start_period gives the container time to initialize before the healthcheck starts.
-      start_period: 40s
+      start_period: 60s
 
   # 2. Nginx Proxy Manager: Handles reverse proxy, SSL, and routing.
   npm:
@@ -86,7 +87,7 @@ services:
 
   # 4. MinIO: S3-compatible object storage for unstructured data.
   minio:
-    image: minio/minio:RELEASE.2024-12-13T22-06-12Z
+    image: minio/minio:latest
     container_name: v2-poc-minio
     restart: unless-stopped
     environment:

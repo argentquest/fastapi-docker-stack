@@ -18,31 +18,34 @@ from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
+
 class DatabaseService:
     """
     A service class to handle PostgreSQL operations, including pgvector functionality.
-    
+
     Attributes:
         pool: An `asyncpg.Pool` instance for managing database connections.
     """
-    
+
     def __init__(self):
         """Initializes the DatabaseService with a None value for the connection pool."""
         self.pool: Optional[asyncpg.Pool] = None
-    
+
     async def initialize(self):
         """
         Initializes the asynchronous database connection pool.
-        
+
         This method should be called during application startup.
         It uses settings from the application's configuration.
-        
+
         Raises:
             RuntimeError: If the database pool fails to initialize.
         """
         if self.pool:
             logger.warning("Database pool already initialized.")
             return
+
+        logger.info(f"Initializing database connection pool to {settings.DATABASE_URL}...")
         try:
             self.pool = await asyncpg.create_pool(
                 dsn=settings.DATABASE_URL,
@@ -50,21 +53,24 @@ class DatabaseService:
                 max_size=settings.DB_POOL_MAX_SIZE,
                 command_timeout=settings.DB_COMMAND_TIMEOUT
             )
-            logger.info("Database connection pool initialized successfully.")
+            logger.info(f"Database connection pool initialized successfully with min={settings.DB_POOL_MIN_SIZE}, max={settings.DB_POOL_MAX_SIZE} connections")
         except Exception as e:
             logger.critical(f"Failed to initialize database pool: {e}", exc_info=True)
             raise RuntimeError(f"Database initialization failed: {e}")
-    
+
     async def close(self):
         """Closes the database connection pool gracefully."""
         if self.pool:
+            logger.info("Closing database connection pool...")
             await self.pool.close()
             self.pool = None
-            logger.info("Database connection pool closed.")
-    
+            logger.info("Database connection pool closed successfully.")
+        else:
+            logger.debug("Database pool was not initialized, nothing to close.")
+
     async def create_ai_log(
         self, system_prompt: str, user_context: str, ai_result: str,
-        embedding: List[float], file_url: Optional[str] = None, 
+        embedding: List[float], file_url: Optional[str] = None,
         response_time_ms: Optional[int] = None
     ) -> Dict[str, Any]:
         """
@@ -80,21 +86,27 @@ class DatabaseService:
 
         Returns:
             A dictionary representing the newly created log entry.
-        
+
         Raises:
             RuntimeError: If the database operation fails.
         """
+        logger.debug(f"Creating AI log entry with embedding dimensions: {len(embedding)}")
         try:
             async with self.pool.acquire() as conn:
+                logger.debug("Acquired database connection from pool")
+                # Convert the embedding list to a PostgreSQL vector string format
+                # pgvector expects format like '[0.1, 0.2, 0.3]'
+                embedding_str = f"[{','.join(map(str, embedding))}]"
+
                 result = await conn.fetchrow("""
-                    INSERT INTO ai_test_logs 
+                    INSERT INTO ai_test_logs
                     (system_prompt, user_context, ai_result, embedding, file_url, response_time_ms)
-                    VALUES ($1, $2, $3, $4, $5, $6)
+                    VALUES ($1, $2, $3, $4::vector, $5, $6)
                     RETURNING id, created_at
-                """, system_prompt, user_context, ai_result, embedding, file_url, response_time_ms)
-                
+                """, system_prompt, user_context, ai_result, embedding_str, file_url, response_time_ms)
+
                 log_entry = dict(result)
-                logger.info(f"Created AI log entry with ID: {log_entry['id']}")
+                logger.info(f"Successfully created AI log entry with ID: {log_entry['id']}, response_time: {response_time_ms}ms")
                 return log_entry
         except Exception as e:
             logger.error(f"Error creating AI log: {e}", exc_info=True)
@@ -113,12 +125,17 @@ class DatabaseService:
 
         Returns:
             A list of similar log entries, each including a 'similarity' score.
-        
+
         Raises:
             RuntimeError: If the database search fails.
         """
+        logger.debug(f"Searching for similar logs with embedding dimensions: {len(embedding)}, min_similarity: {min_similarity}, limit: {limit}")
         try:
             async with self.pool.acquire() as conn:
+                logger.debug("Executing vector similarity search query...")
+                # Convert the embedding list to PostgreSQL vector string format
+                embedding_str = f"[{','.join(map(str, embedding))}]"
+
                 # The `<=>` operator calculates the cosine distance (0=identical, 2=opposite).
                 # We subtract from 1 to get cosine similarity (1=identical, -1=opposite).
                 results = await conn.fetch("""
@@ -129,10 +146,13 @@ class DatabaseService:
                     WHERE 1 - (embedding <=> $1::vector) >= $2
                     ORDER BY similarity DESC -- Order by similarity descending
                     LIMIT $3
-                """, embedding, min_similarity, limit)
-                
+                """, embedding_str, min_similarity, limit)
+
                 similar_logs = [dict(log) for log in results]
-                logger.info(f"Found {len(similar_logs)} similar logs with similarity >= {min_similarity}")
+                logger.info(f"Vector search completed: Found {len(similar_logs)} similar logs with similarity >= {min_similarity}")
+                if similar_logs:
+                    top_similarity = similar_logs[0].get('similarity', 0)
+                    logger.debug(f"Top similarity score: {top_similarity:.4f}")
                 return similar_logs
         except Exception as e:
             logger.error(f"Error finding similar logs: {e}", exc_info=True)
@@ -152,29 +172,38 @@ class DatabaseService:
             A dictionary containing the health status and diagnostic information.
         """
         if not self.pool:
+            logger.warning("Database health check failed: Pool not initialized")
             return {"status": "error", "error": "Database pool not initialized"}
-        
+
+        logger.debug("Starting database health check...")
         try:
             async with self.pool.acquire() as conn:
                 # 1. Test basic connectivity
+                logger.debug("Testing database connectivity...")
                 await conn.fetchval("SELECT 1")
-                
+
                 # 2. Test pgvector extension
+                logger.debug("Checking pgvector extension...")
                 vector_ext = await conn.fetchval("SELECT 1 FROM pg_extension WHERE extname = 'vector'")
-                
+
                 # 3. Test table existence
+                logger.debug("Checking ai_test_logs table...")
                 table_exists = await conn.fetchval("SELECT to_regclass('public.ai_test_logs')")
 
-                return {
+                health_status = {
                     "status": "healthy",
                     "connectivity": "ok",
                     "pgvector_extension": "installed" if vector_ext else "missing",
                     "ai_test_logs_table": "exists" if table_exists else "missing",
                 }
+                logger.info(f"Database health check completed: {health_status['status']}")
+                return health_status
         except Exception as e:
             logger.error(f"Database health check failed: {e}", exc_info=True)
             return {"status": "error", "error": str(e)}
 
 # Create a single, global instance of the DatabaseService.
 # This instance will be imported and used by other parts of the application.
+
+
 database_service = DatabaseService()

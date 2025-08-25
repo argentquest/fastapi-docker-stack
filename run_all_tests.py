@@ -18,7 +18,7 @@ from pathlib import Path
 
 def main() -> int:
     """Main function to execute all test suites."""
-    print("🚀 V2 POC COMPREHENSIVE TEST SUITE 🚀")
+    print("[ROCKET] V2 POC COMPREHENSIVE TEST SUITE [ROCKET]")
     print("=" * 60)
     
     # Define the test scripts to be executed in a specific order.
@@ -35,17 +35,17 @@ def main() -> int:
     test_results = []
     overall_start_time = time.time()
     
-    print(f"\n🔍 Found {len(test_scripts)} test suites to run...\n")
+    print(f"\n[SEARCH] Found {len(test_scripts)} test suites to run...\n")
     
     # --- Test Execution Loop ---
     for test_num, test_name, script_name in test_scripts:
-        print(f"▶️  RUNNING TEST {test_num}: {test_name}")
+        print(f"[UNICODE]  RUNNING TEST {test_num}: {test_name}")
         print("-" * 40)
         
         script_path = Path(__file__).parent / "tests" / script_name
         
         if not script_path.exists():
-            print(f"❌ FAILED: Test script not found at {script_path}")
+            print(f"[X] FAILED: Test script not found at {script_path}")
             test_results.append({
                 'name': test_name, 'status': 'MISSING', 'duration': 0,
                 'error': f"Script not found: {script_name}"
@@ -66,24 +66,24 @@ def main() -> int:
             if result.returncode == 0:
                 status = "PASSED"
                 error = None
-                print(f"✅ PASSED in {duration:.2f}s")
+                print(f"[OK] PASSED in {duration:.2f}s")
             else:
                 status = "FAILED"
                 error = result.stderr.strip() or result.stdout.strip()
-                print(f"❌ FAILED in {duration:.2f}s")
+                print(f"[X] FAILED in {duration:.2f}s")
                 print(f"   ERROR: {error[:200]}..." if len(error) > 200 else f"   ERROR: {error}")
             
         except subprocess.TimeoutExpired:
             duration = time.time() - start_time
             status = "TIMEOUT"
             error = "Test exceeded the 120-second timeout."
-            print(f"⏱️  TIMEOUT after {duration:.2f}s")
+            print(f"[TIMER]  TIMEOUT after {duration:.2f}s")
             
         except Exception as e:
             duration = time.time() - start_time
             status = "ERROR"
             error = f"An unexpected error occurred: {e}"
-            print(f"💥 ERROR: {e}")
+            print(f"[UNICODE] ERROR: {e}")
         
         test_results.append({
             'name': test_name, 'status': status, 
@@ -97,28 +97,28 @@ def main() -> int:
     failed_count = len(test_results) - passed_count
     
     print("\n" + "=" * 60)
-    print("📊 TEST SUITE SUMMARY")
+    print("[CHART] TEST SUITE SUMMARY")
     print("=" * 60)
-    print(f"Total Tests: {len(test_results)} | ✅ Passed: {passed_count} | ❌ Failed: {failed_count}")
-    print(f"⏱️  Total Duration: {overall_duration:.2f}s")
+    print(f"Total Tests: {len(test_results)} | [OK] Passed: {passed_count} | [X] Failed: {failed_count}")
+    print(f"[TIMER]  Total Duration: {overall_duration:.2f}s")
     print("-" * 60)
     
     for test in test_results:
-        status_emoji = {'PASSED': '✅', 'FAILED': '❌', 'TIMEOUT': '⏱️', 'ERROR': '💥', 'MISSING': '❓'}
+        status_emoji = {'PASSED': '[OK]', 'FAILED': '[X]', 'TIMEOUT': '[TIMER]', 'ERROR': '[UNICODE]', 'MISSING': '[UNICODE]'}
         print(f"{status_emoji.get(test['status'])} {test['name']:<30} [{test['status']:<7}] ({test['duration']:.2f}s)")
         if test['error']:
             # Indent the error message for readability.
             error_line = test['error'].replace('\n', ' ').strip()
-            print(f"    └─ Error: {error_line[:100]}{'...' if len(error_line) > 100 else ''}")
+            print(f"    [UNICODE] Error: {error_line[:100]}{'...' if len(error_line) > 100 else ''}")
     
     # --- Final Assessment & Exit Code ---
     print("\n" + "=" * 60)
     if failed_count == 0:
-        print("🎉 ALL TESTS PASSED! The V2 stack is healthy and integrated correctly.")
+        print("[CELEBRATE] ALL TESTS PASSED! The V2 stack is healthy and integrated correctly.")
         return_code = 0
     else:
-        print("❌ SOME TESTS FAILED. Please review the errors above.")
-        print("\n📝 NEXT STEPS:")
+        print("[X] SOME TESTS FAILED. Please review the errors above.")
+        print("\n[NOTE] NEXT STEPS:")
         print("1. Check container logs: `docker-compose logs <service_name>`")
         print("2. Verify your `.env` file has the correct credentials.")
         print("3. Re-run failed tests individually for more detailed output.")

@@ -13,7 +13,7 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
 WORKDIR /app
 
 # Copy the dependency configuration files.
-COPY pyproject.toml uv.lock* ./
+COPY pyproject.toml uv.lock* README.md ./
 
 # Install dependencies into a virtual environment using uv.
 # --frozen ensures that the exact versions from the lock file are used.
@@ -26,7 +26,8 @@ FROM python:3.11-slim
 
 # Install system dependencies required by libraries like psycopg2 (for PostgreSQL).
 # libpq5 is the PostgreSQL C client library.
-RUN apt-get update && apt-get install -y \
+# Set DEBIAN_FRONTEND to avoid interactive prompts during build
+RUN DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install -y \
     libpq5 \
     && rm -rf /var/lib/apt/lists/*
 
@@ -37,7 +38,7 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
 WORKDIR /app
 
 # Copy the dependency configuration files.
-COPY pyproject.toml uv.lock* ./
+COPY pyproject.toml uv.lock* README.md ./
 
 # Copy the pre-built virtual environment from the builder stage.
 # This avoids reinstalling all dependencies, making the build much faster.
@@ -49,8 +50,13 @@ COPY app/ app/
 # Create a non-root user and group for security.
 # Running as a non-root user is a critical security best practice.
 RUN addgroup --system --gid 1001 appgroup && \
-    adduser --system --uid 1001 --ingroup appgroup --no-create-home appuser && \
-    chown -R appuser:appgroup /app
+    adduser --system --uid 1001 --ingroup appgroup --home /home/appuser appuser && \
+    mkdir -p /home/appuser/.cache && \
+    chown -R appuser:appgroup /app /home/appuser
+
+# Set environment variables for uv cache
+ENV UV_CACHE_DIR=/home/appuser/.cache/uv
+ENV HOME=/home/appuser
 
 # Switch to the non-root user.
 USER appuser

@@ -22,8 +22,13 @@ import asyncio
 from typing import Dict, Any
 
 # Configuration for the test environment
+
+
 API_URL = "http://localhost:8000"
+
+
 HEALTH_URL = "http://localhost/health"
+
 
 def main_test_logic():
     """Main function to run the end-to-end test."""
@@ -36,25 +41,26 @@ def main_test_logic():
         print("\n1. Verifying overall system health...")
         if not test_system_health():
             raise RuntimeError("System health check failed. Cannot proceed with e2e test.")
-        print("✅ System is healthy. Proceeding with workflow test.")
+        print("[OK] System is healthy. Proceeding with workflow test.")
 
         # --- Test 2: Complete AI Workflow ---
         print("\n2. Testing the complete AI workflow...")
         workflow_status = test_complete_ai_workflow()
         if not workflow_status.get('success'):
-            raise RuntimeError(f"AI workflow failed: {workflow_status.get('error')}")
-        print("✅ Complete AI workflow successful.")
-        print(f"   -> AI response stored in DB (ID: {workflow_status['log_id']}) and MinIO.")
-        print(f"   -> Result was cached in Redis (Key: {workflow_status['cache_key']}).")
+            raise RuntimeError("AI workflow failed: {workflow_status.get('error')}")
+        print("[OK] Complete AI workflow successful.")
+        print("   -> AI response stored in DB (ID: {workflow_status['log_id']}) and MinIO.")
+        print("   -> Result was cached in Redis (Key: {workflow_status['cache_key']}).")
 
     except Exception as e:
-        print(f"\n❌ FAILED: An error occurred: {e}")
+        print("\n[X] FAILED: An error occurred: {e}")
         return False
 
     print("\n" + "=" * 60)
-    print("✅ TEST 06 PASSED: End-to-end integration is successful.")
+    print("[OK] TEST 06 PASSED: End-to-end integration is successful.")
     print("=" * 60)
     return True
+
 
 def test_system_health() -> bool:
     """Queries the /health endpoint and ensures all services report 'healthy'."""
@@ -63,12 +69,13 @@ def test_system_health() -> bool:
     health_data = response.json()
     return health_data.get('status') == 'healthy'
 
+
 def test_complete_ai_workflow() -> Dict[str, Any]:
     """Tests the full workflow by calling the /ai-test endpoint and verifying the side effects."""
     # 1. Define the request payload for the main endpoint.
     ai_request = {
         "system_prompt": "You are a helpful test assistant.",
-        "user_context": f"This is an end-to-end test initiated at {time.time()}"
+        "user_context": "This is an end-to-end test initiated at {time.time()}"
     }
 
     # 2. Call the /ai-test endpoint.
@@ -88,12 +95,13 @@ def test_complete_ai_workflow() -> Dict[str, Any]:
     # We can do this by calling the endpoint again and checking for a cache header or by directly querying redis.
     # For simplicity, we assume the cache_service is working as tested in test_05.
     # A more robust test could directly query Redis here.
-    
+
     return {
         'success': True,
         'log_id': result['id'],
         'cache_key': "(not directly checked, assumed success from service response)",
     }
+
 
 if __name__ == '__main__':
     try:
@@ -102,5 +110,5 @@ if __name__ == '__main__':
         else:
             sys.exit(1)
     except Exception as e:
-        print(f"\n❌ An unexpected error occurred: {e}")
+        print("\n[X] An unexpected error occurred: {e}")
         sys.exit(1)

@@ -16,6 +16,7 @@ from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
+
 class OpenRouterService:
     """
     A service class for interacting with the OpenRouter API.
@@ -41,19 +42,25 @@ class OpenRouterService:
         if not settings.OPENROUTER_API_KEY:
             logger.critical("OpenRouter API key is not configured. Service cannot start.")
             raise ValueError("OPENROUTER_API_KEY is not set in the environment.")
-        
+
+        logger.info(f"Initializing OpenRouter client with base URL: {settings.OPENROUTER_BASE_URL}")
+
         # OpenRouter allows identifying your app with specific headers.
         default_headers = {
-            "HTTP-Referer": settings.OPENROUTER_SITE_URL, 
+            "HTTP-Referer": settings.OPENROUTER_SITE_URL,
             "X-Title": settings.OPENROUTER_APP_NAME
         }
-        
-        logger.debug("Creating OpenRouter client.")
-        return openai.AsyncOpenAI(
+
+        logger.debug(f"Using headers: HTTP-Referer={settings.OPENROUTER_SITE_URL}, X-Title={settings.OPENROUTER_APP_NAME}")
+
+        client = openai.AsyncOpenAI(
             api_key=settings.OPENROUTER_API_KEY,
             base_url=settings.OPENROUTER_BASE_URL,
-            default_headers={k: v for k, v in default_headers.items() if v} # Remove empty headers
+            default_headers={k: v for k, v in default_headers.items() if v}  # Remove empty headers
         )
+
+        logger.info("OpenRouter client initialized successfully")
+        return client
 
     async def generate_response(
         self, system_prompt: str, user_context: str, model: Optional[str] = None,
@@ -65,7 +72,7 @@ class OpenRouterService:
         Args:
             system_prompt: The instruction or persona for the AI.
             user_context: The user's query or input.
-            model: The specific model to use (e.g., 'deepseek/deepseek-r1'). 
+            model: The specific model to use (e.g., 'deepseek/deepseek-r1').
                    Defaults to the one in settings.
             temperature: Controls the creativity of the response (0.0 to 2.0).
             max_tokens: The maximum number of tokens in the generated response.
@@ -77,9 +84,11 @@ class OpenRouterService:
             RuntimeError: If the API call fails or returns an empty response.
         """
         target_model = model or settings.DEFAULT_MODEL
-        logger.info(f"Generating AI response using model: {target_model}")
-        
+        logger.info(f"Generating AI response using model: {target_model}, temperature: {temperature}, max_tokens: {max_tokens}")
+        logger.debug(f"System prompt length: {len(system_prompt)} chars, User context length: {len(user_context)} chars")
+
         try:
+            logger.debug("Sending request to OpenRouter API...")
             response = await self.client.chat.completions.create(
                 model=target_model,
                 messages=[
@@ -89,17 +98,22 @@ class OpenRouterService:
                 temperature=temperature,
                 max_tokens=max_tokens
             )
-            
+
             if not response.choices or not response.choices[0].message.content:
-                logger.warning("Received an empty response from OpenRouter.")
-                raise ValueError("No content in response from OpenRouter.")
-                
+                logger.warning("Received an empty response from OpenRouter")
+                raise ValueError("No content in response from OpenRouter")
+
             content = response.choices[0].message.content
-            logger.info(f"Successfully generated AI response of {len(content)} characters.")
+
+            # Log token usage if available
+            if hasattr(response, 'usage'):
+                logger.info(f"Token usage - Prompt: {response.usage.prompt_tokens}, Completion: {response.usage.completion_tokens}, Total: {response.usage.total_tokens}")
+
+            logger.info(f"Successfully generated AI response of {len(content)} characters using {target_model}")
             return content.strip()
-            
+
         except Exception as e:
-            logger.error(f"Error generating OpenRouter response: {e}", exc_info=True)
+            logger.error(f"Error generating OpenRouter response with model {target_model}: {e}", exc_info=True)
             raise RuntimeError(f"OpenRouter API call failed: {e}")
 
     async def health_check(self) -> dict:
@@ -111,18 +125,29 @@ class OpenRouterService:
         Returns:
             A dictionary containing the health status.
         """
+        logger.debug("Starting OpenRouter health check...")
         try:
             # A simple, low-token request to verify connectivity and authentication.
-            await self.generate_response(
+            logger.debug(f"Testing API connectivity with model: {settings.DEFAULT_MODEL}")
+
+            response = await self.generate_response(
                 system_prompt="You are a health check assistant.",
                 user_context="Reply with a single word: ok",
                 max_tokens=5
             )
-            return {"status": "healthy", "details": "API key is valid and service is reachable."}
+
+            logger.info(f"OpenRouter health check completed successfully, response: '{response}'")
+            return {
+                "status": "healthy",
+                "details": "API key is valid and service is reachable.",
+                "model": settings.DEFAULT_MODEL
+            }
         except Exception as e:
             logger.error(f"OpenRouter health check failed: {e}", exc_info=True)
             return {"status": "error", "error": str(e)}
 
 # Create a single, global instance of the OpenRouterService.
 # This instance will be imported and used by other parts of the application.
+
+
 openrouter_service = OpenRouterService()

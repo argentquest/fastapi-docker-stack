@@ -1,0 +1,110 @@
+{
+  "health_performance": {
+    "avg_response_time_ms": 2527.284049987793,
+    "min_response_time_ms": 1499.4332790374756,
+    "max_response_time_ms": 5290.431261062622,
+    "successful_requests": 5,
+    "total_requests": 5,
+    "success_rate_percent": 100.0
+  },
+  "service_availability": {
+    "FastAPI Docker (8000)": {
+      "status": "timeout",
+      "error": "Request timed out after 3s"
+    },
+    "FastAPI Debug (8001)": {
+      "status": "timeout",
+      "error": "Request timed out after 3s"
+    },
+    "MinIO API (9000)": {
+      "status": "available",
+      "response_time_ms": 12.444257736206055,
+      "http_status": 200
+    },
+    "MinIO Console (9001)": {
+      "status": "available",
+      "response_time_ms": 23.232221603393555,
+      "http_status": 200
+    },
+    "pgAdmin (5050)": {
+      "status": "available",
+      "response_time_ms": 226.73583030700684,
+      "http_status": 200
+    },
+    "Redis Commander (8081)": {
+      "status": "available",
+      "response_time_ms": 78.72509956359863,
+      "http_status": 200
+    },
+    "Nginx Proxy Manager (81)": {
+      "status": "available",
+      "response_time_ms": 36.42773628234863,
+      "http_status": 200
+    },
+    "Dashboard (8082)": {
+      "status": "available",
+      "response_time_ms": 59.54408645629883,
+      "http_status": 200
+    },
+    "_summary": {
+      "available_services": 6,
+      "total_services": 8,
+      "availability_percent": 75.0
+    }
+  },
+  "container_status": {
+    "v2-poc-app": {
+      "service": "app",
+      "state": "running",
+      "status": "Up 6 minutes (unhealthy)",
+      "healthy": true
+    },
+    "v2-poc-dashboard": {
+      "service": "dashboard",
+      "state": "running",
+      "status": "Up 10 minutes",
+      "healthy": true
+    },
+    "v2-poc-minio": {
+      "service": "minio",
+      "state": "running",
+      "status": "Up 10 minutes (healthy)",
+      "healthy": true
+    },
+    "v2-poc-npm": {
+      "service": "npm",
+      "state": "running",
+      "status": "Up 10 minutes",
+      "healthy": true
+    },
+    "v2-poc-pgadmin": {
+      "service": "pgadmin",
+      "state": "running",
+      "status": "Up 10 minutes",
+      "healthy": true
+    },
+    "v2-poc-postgres": {
+      "service": "postgres",
+      "state": "running",
+      "status": "Up 10 minutes (healthy)",
+      "healthy": true
+    },
+    "v2-poc-redis": {
+      "service": "redis",
+      "state": "running",
+      "status": "Up 10 minutes (healthy)",
+      "healthy": true
+    },
+    "v2-poc-redis-commander": {
+      "service": "redis-commander",
+      "state": "running",
+      "status": "Up 10 minutes (healthy)",
+      "healthy": true
+    },
+    "_summary": {
+      "healthy_containers": 8,
+      "total_containers": 8,
+      "health_percent": 100.0
+    }
+  }
+}

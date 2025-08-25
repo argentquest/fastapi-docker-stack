@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(docker-compose stop:*)",
+      "Bash(docker-compose rm:*)",
+      "Bash(docker-compose up:*)",
+      "Bash(chmod:*)",
+      "Bash(./validate.sh)",
+      "Bash(docker-compose logs:*)",
+      "Bash(docker exec:*)",
+      "Bash(docker-compose build:*)",
+      "Bash(.venv\\Scripts\\python -m flake8:*)",
+      "Bash(python:*)"
+    ],
+    "deny": []
+  }
+}

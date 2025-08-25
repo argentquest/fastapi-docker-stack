@@ -1,0 +1,74 @@
+[flake8]
+# Maximum line length
+max-line-length = 120
+
+# Maximum cyclomatic complexity
+max-complexity = 10
+
+# Exclude paths
+exclude = 
+    .git,
+    __pycache__,
+    .venv,
+    venv,
+    .eggs,
+    *.egg,
+    build,
+    dist,
+    .pytest_cache,
+    .mypy_cache,
+    .tox,
+    docs,
+    data,
+    datafiles,
+    logs,
+    *.pyc,
+    *.pyo,
+    .env
+
+# Ignore specific errors
+ignore = 
+    # E203: whitespace before ':' (conflicts with black)
+    E203,
+    # W503: line break before binary operator (conflicts with black)
+    W503,
+    # E501: line too long (we use max-line-length)
+    E501,
+    # F401: imported but unused (sometimes needed for type hints)
+    F401,
+    # F841: local variable assigned but never used
+    F841
+
+# Per-file ignores
+per-file-ignores = 
+    # Allow unused imports in __init__.py files
+    __init__.py: F401
+    # Allow longer lines in tests
+    tests/*.py: E501
+    # Allow print statements in scripts
+    scripts/*.py: T201
+
+# Enable these plugins
+enable-extensions = 
+    # Naming conventions
+    N,
+    # Docstrings
+    D,
+    # Import order
+    I
+
+# Docstring convention
+docstring-convention = google
+
+# Statistics
+statistics = True
+count = True
+
+# Format of output
+format = %(path)s:%(row)d:%(col)d: %(code)s %(text)s
+
+# Show source code for each error
+show-source = True
+
+# Count errors
+show-pep8 = True

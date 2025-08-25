@@ -120,6 +120,7 @@ docker-compose logs -f
 
 ### 4. Run Tests
 
+
 ```bash
 # Run comprehensive test suite
 python run_all_tests.py
@@ -140,7 +141,8 @@ python tests/test_vector_with_book.py
 
 | Service | Purpose | Port(s) | Access URL / Details |
 | :--- | :--- | :--- | :--- |
-| **FastAPI App** | Main Application API | `8000` | `http://localhost:8000` (direct) or `http://localhost/docs` (via Nginx) |
+| **FastAPI Docker** | Production API (Container) | `8000` | `http://localhost:8000` (direct) or `http://localhost/docs` (via Nginx) |
+| **FastAPI Debug** | Development API (Local) | `8001` | `http://localhost:8001` (VS Code F5 debug mode with hot-reload) |
 | **Nginx Proxy** | Reverse Proxy & Admin | `80`, `443`, `81` | `http://localhost` (proxied apps), `http://localhost:81` (admin UI) |
 | **PostgreSQL** | Database Server | `5432` | Connect via SQL client at `localhost:5432` |
 | **MinIO S3** | S3 API Endpoint | `9000` | `http://localhost:9000` |
@@ -245,12 +247,25 @@ Here's how to connect to the different services running in the Docker containers
 
 After logging in for the first time, you will be prompted to change the default credentials.
 
-### FastAPI Application (app)
+### FastAPI Application (Dual-Port Setup)
 
--   **API Docs (Swagger UI):** [http://localhost/docs](http://localhost/docs)
--   **Health Check:** [http://localhost/health](http://localhost/health)
+The FastAPI application runs in two modes for flexible development:
 
-The FastAPI application is served through the Nginx Proxy Manager on port 80.
+#### Production Mode (Docker Container - Port 8000)
+-   **Direct API Access:** [http://localhost:8000](http://localhost:8000)
+-   **API Docs (Swagger UI):** [http://localhost:8000/docs](http://localhost:8000/docs)
+-   **Health Check:** [http://localhost:8000/health](http://localhost:8000/health)
+-   **Via Nginx Proxy:** [http://localhost/docs](http://localhost/docs) (proxied through port 80)
+-   **Purpose:** Production-like testing with full Docker stack integration
+
+#### Debug Mode (Local Development - Port 8001)
+-   **Direct API Access:** [http://localhost:8001](http://localhost:8001)
+-   **API Docs (Swagger UI):** [http://localhost:8001/docs](http://localhost:8001/docs)
+-   **Health Check:** [http://localhost:8001/health](http://localhost:8001/health)
+-   **Purpose:** Local debugging with VS Code breakpoints and hot-reload
+-   **Launch:** Press F5 in VS Code or run `uvicorn app.main:app --reload --host 0.0.0.0 --port 8001`
+
+**Note:** Both instances connect to the same Docker infrastructure (PostgreSQL, Redis, MinIO), enabling seamless development and testing workflows.
 
 ### MinIO (S3 Storage)
 
@@ -263,15 +278,58 @@ You can use any S3-compatible client (like `s3cmd` or the AWS CLI) to interact w
 
 ### pgAdmin (Database Management)
 
--   **Web UI:** [http://localhost:5050](http://localhost:5050)
--   **Default Email:** `admin@example.com`
--   **Default Password:** `admin`
+#### Access pgAdmin
 
-After logging in, you will need to add a new server connection with the following details:
-*   **Host:** `postgres`
-*   **Port:** `5432`
-*   **Username:** `pocuser`
-*   **Password:** `pocpass` (or the value you set in your `.env` file)
+-   **Web UI:** [http://localhost:5050](http://localhost:5050)
+-   **Login Email:** `admin@example.com`
+-   **Login Password:** `admin`
+
+#### Connect to PostgreSQL Database
+
+After logging in, follow these steps to connect to your database:
+
+1. **Right-click** on "Servers" in the left panel
+2. Select **"Register" → "Server..."**
+3. Configure the connection:
+
+**General Tab:**
+-   **Name:** `V2 POC Database` (or any name you prefer)
+
+**Connection Tab:**
+-   **Host name/address:** `host.docker.internal` (IMPORTANT: Not localhost!)
+-   **Port:** `5432`
+-   **Maintenance database:** `poc_db`
+-   **Username:** `pocuser`
+-   **Password:** `pocpass`
+-   **Save password:** ✓ (check this box)
+
+4. Click **"Save"**
+
+**Alternative Host Options** (if `host.docker.internal` doesn't work):
+-   **Option A:** Use container name: `postgres`
+-   **Option B:** Use Docker network IP: Run `docker inspect v2-poc-postgres | grep IPAddress` and use that IP
+
+#### Verify Connection
+
+Once connected, you should see:
+-   **Databases** → `poc_db`
+-   **Schemas** → `public`
+-   **Tables** → `ai_test_logs`
+-   **Extensions** → `vector` (pgvector extension)
+
+#### Test pgVector
+
+Open Query Tool and run:
+```sql
+-- Check pgvector extension
+SELECT * FROM pg_extension WHERE extname = 'vector';
+
+-- Check stored embeddings
+SELECT COUNT(*) FROM ai_test_logs;
+
+-- View embedding dimensions
+SELECT octet_length(embedding::text) as embedding_size FROM ai_test_logs LIMIT 1;
+```
 
 ### Redis Commander (Web UI for Redis)
 
@@ -391,16 +449,55 @@ The POC includes comprehensive tests for:
 
 ## 🛠️ Development
 
-### VS Code Integration
+### VS Code Development Environment
 
-The project includes comprehensive VS Code configuration:
+The project includes comprehensive VS Code configuration files in the `.vscode/` directory:
 
-- **Launch configurations** for debugging
-- **Tasks** for Docker and testing
-- **Code snippets** for rapid development
-- **Recommended extensions**
-- **Python formatting** with Black
-- **Linting** with Flake8
+#### Launch Configurations (`.vscode/launch.json`)
+- **FastAPI - Local Debug (Port 8001)**: Main debug configuration for local development
+  - Launches FastAPI on port 8001 with hot-reload
+  - Enables breakpoint debugging and step-through debugging
+  - Loads environment variables from `.env` file
+  - Overrides specific settings for development (DEBUG log level)
+- **FastAPI - Docker Remote Debug**: Attach debugger to running Docker container
+  - Connects to container's debug port (5678) for remote debugging
+  - Maps local workspace to container paths
+- **Python: Current File**: Debug any individual Python file with environment support
+
+#### Development Tasks (`.vscode/tasks.json`)
+Pre-configured tasks accessible via Ctrl+Shift+P → "Tasks: Run Task":
+- **Docker Operations**: `docker-compose-up`, `docker-compose-down`, `docker-compose-build`, `docker-compose-logs`
+- **Python Environment**: `create-venv`, `activate-venv`, `install-dependencies`
+- **Testing Suite**: `run-tests` (all tests), plus individual test tasks for each test file
+- **Code Quality**: `format-code` (Black), `lint-code` (Flake8), `check-types` (MyPy)
+
+#### Editor Settings (`.vscode/settings.json`)
+- **Python Environment**: Automatically uses `.venv/Scripts/python.exe`
+- **Code Formatting**: Black formatter with 120-character line length
+- **Linting**: Flake8 enabled with custom rules (E203, W503 ignored)
+- **Testing**: Pytest integration configured
+- **File Associations**: Auto-detects Dockerfiles, SQL, environment files
+- **Docker Integration**: Container management and debugging support
+
+#### Recommended Extensions (`.vscode/extensions.json`)
+Essential extensions for optimal development experience:
+- **Python Development**: Python, Pylance, Black formatter, Flake8, MyPy
+- **Docker Support**: Docker extension, Remote-Containers
+- **Database Tools**: SQLTools with PostgreSQL driver
+- **Code Quality**: SonarLint, spell checker
+- **API Testing**: REST Client, Thunder Client for testing endpoints
+- **Git Integration**: GitLens, Git Graph for enhanced version control
+
+#### Code Snippets (`.vscode/*.code-snippets`)
+- **Python snippets**: FastAPI routes, async functions, database operations
+- **Docker snippets**: Common Docker commands and configurations
+
+**Getting Started with VS Code:**
+1. Open project in VS Code: `code .`
+2. Install recommended extensions when prompted
+3. Press `F5` to start debug server on port 8001
+4. Use `Ctrl+Shift+P` → "Tasks: Run Task" for common operations
+5. Access Docker container logs via Docker extension sidebar
 
 ### Project Structure
 
@@ -505,6 +602,149 @@ We welcome contributions from the community! For questions, issues, or contribut
 ## 📝 License
 
 MIT License - See [LICENSE](LICENSE) for details
+
+## 🧹 Docker Cleanup Commands
+
+### Clean Up Docker Artifacts
+
+```bash
+# Remove all stopped containers, unused networks, images, and build cache
+docker system prune -a
+
+# Also remove unused volumes (WARNING: This deletes data!)
+docker system prune -a --volumes
+
+# Force removal without confirmation prompt
+docker system prune -a --volumes -f
+
+# Check disk usage before cleaning
+docker system df
+```
+
+### Granular Cleanup
+
+```bash
+# Remove all containers (stopped and running)
+docker rm -f $(docker ps -aq)
+
+# Remove all images
+docker rmi -f $(docker images -aq)
+
+# Remove all volumes (WARNING: This deletes data!)
+docker volume rm $(docker volume ls -q)
+
+# Remove all networks (except default ones)
+docker network rm $(docker network ls -q)
+```
+
+### Docker Compose Cleanup
+
+```bash
+# Stop and remove containers, networks, volumes, and images created by docker-compose
+docker-compose down --volumes --rmi all
+
+# Remove only containers and networks (keep volumes and images)
+docker-compose down
+
+# Remove containers, networks, and anonymous volumes
+docker-compose down --volumes
+```
+
+## 🔐 Quick Reference - All Credentials & Endpoints
+
+### Service Endpoints
+
+| Service | URL | Port | Purpose |
+|---------|-----|------|---------|
+| **FastAPI Docker** | http://localhost:8000 | 8000 | Production-like API (Docker) |
+| **FastAPI Debug** | http://localhost:8001 | 8001 | Local development (VS Code F5) |
+| **FastAPI Docs** | http://localhost:8000/docs | 8000 | Swagger UI (Docker) |
+| **FastAPI Debug Docs** | http://localhost:8001/docs | 8001 | Swagger UI (Debug) |
+| **Nginx Proxy** | http://localhost | 80 | Proxied apps |
+| **Nginx Admin** | http://localhost:81 | 81 | Proxy Manager UI |
+| **PostgreSQL** | localhost:5432 | 5432 | Database connection |
+| **MinIO API** | http://localhost:9000 | 9000 | S3 API endpoint |
+| **MinIO Console** | http://localhost:9001 | 9001 | MinIO Web UI |
+| **Redis** | localhost:6379 | 6379 | Cache server |
+| **pgAdmin** | http://localhost:5050 | 5050 | PostgreSQL Web UI |
+| **Redis Commander** | http://localhost:8081 | 8081 | Redis Web UI |
+| **Dashboard** | http://localhost:8082 | 8082 | Service dashboard |
+
+### Default Credentials
+
+| Service | Username/Email | Password | Notes |
+|---------|---------------|----------|-------|
+| **Nginx Proxy Manager** | admin@example.com | changeme | Change on first login |
+| **PostgreSQL** | pocuser | pocpass | Database user |
+| **MinIO** | minioadmin | minioadmin123 | Root user |
+| **pgAdmin** | admin@example.com | admin | Web UI login |
+| **Redis** | - | - | No auth by default |
+
+### Database Connection String
+
+```
+postgresql://pocuser:pocpass@localhost:5432/poc_db
+```
+
+### MinIO S3 Configuration
+
+```python
+# Python boto3 example
+import boto3
+
+s3 = boto3.client('s3',
+    endpoint_url='http://localhost:9000',
+    aws_access_key_id='minioadmin',
+    aws_secret_access_key='minioadmin123',
+    region_name='us-east-1'
+)
+```
+
+### Redis Connection
+
+```python
+# Python redis example
+import redis
+
+r = redis.Redis(
+    host='localhost',
+    port=6379,
+    db=0
+)
+```
+
+### Docker Container Names
+
+| Container | Name | Purpose |
+|-----------|------|---------|
+| **App** | v2-poc-app | FastAPI application |
+| **Nginx** | v2-poc-npm | Nginx Proxy Manager |
+| **PostgreSQL** | v2-poc-postgres | Database |
+| **MinIO** | v2-poc-minio | Object storage |
+| **Redis** | v2-poc-redis | Cache |
+| **pgAdmin** | v2-poc-pgadmin | Database UI |
+| **Redis Commander** | v2-poc-redis-commander | Cache UI |
+| **Dashboard** | v2-poc-dashboard | Service menu |
+
+### Quick Docker Commands
+
+```bash
+# View all containers
+docker-compose ps
+
+# View specific container logs
+docker-compose logs app
+docker-compose logs postgres
+docker-compose logs minio
+
+# Enter a container
+docker exec -it v2-poc-app /bin/bash
+docker exec -it v2-poc-postgres psql -U pocuser -d poc_db
+docker exec -it v2-poc-redis redis-cli
+
+# Restart a specific service
+docker-compose restart app
+```
 
 ## 🙏 Acknowledgments
 

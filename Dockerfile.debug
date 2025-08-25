@@ -1,0 +1,52 @@
+# Dockerfile.debug - FastAPI app with remote debugging support
+FROM python:3.11-slim as builder
+
+# Install uv for dependency management
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
+
+WORKDIR /app
+
+# Copy dependency files
+COPY pyproject.toml uv.lock* README.md ./
+
+# Install dependencies including debugpy
+RUN uv sync --frozen && \
+    uv pip install debugpy
+
+FROM python:3.11-slim
+
+# Install runtime dependencies
+RUN DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install -y \
+    libpq5 \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy uv for runtime
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
+
+WORKDIR /app
+
+# Copy dependencies and app
+COPY pyproject.toml uv.lock* README.md ./
+COPY --from=builder /app/.venv /app/.venv
+COPY app app
+
+# Create non-root user with proper home directory
+RUN addgroup --system --gid 1001 appgroup && \
+    adduser --system --uid 1001 --ingroup appgroup --home /home/appuser appuser && \
+    mkdir -p /home/appuser/.cache && \
+    chown -R appuser:appgroup /app /home/appuser
+
+# Set up environment
+ENV UV_CACHE_DIR=/home/appuser/.cache/uv
+ENV HOME=/home/appuser
+ENV PATH="/app/.venv/bin:$PATH"
+ENV PYTHONPATH=/app
+
+USER appuser
+
+# Expose debug port
+EXPOSE 5678 8000
+
+# Start with debugpy listening on port 5678
+CMD ["python", "-m", "debugpy", "--listen", "0.0.0.0:5678", "--wait-for-client", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
