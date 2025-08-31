@@ -18,6 +18,11 @@ import time
 import requests
 import json
 from typing import Dict, Any
+from pathlib import Path
+
+# Add the parent directory to the path to import app modules
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from app.core.config import settings
 
 # The base URL for the FastAPI application being tested.
 
@@ -71,7 +76,7 @@ def main_test_logic():
 
 def check_environment() -> bool:
     """Checks if the OPENROUTER_API_KEY is set in the environment."""
-    api_key = os.getenv('OPENROUTER_API_KEY')
+    api_key = settings.OPENROUTER_API_KEY
     return api_key is not None and api_key != 'your_openrouter_api_key_here'
 
 

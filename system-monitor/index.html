@@ -153,22 +153,27 @@
                     Main API application with dual environments and comprehensive documentation
                 </div>
                 <div class="service-links">
+                    <a href="http://localhost:8001" target="_blank" class="service-link">
+                        <div>Local Development</div>
+                        <div style="font-size: 0.75em; opacity: 0.8; margin-top: 2px;">Local server (outside Docker)</div>
+                        <span class="port-badge">localhost:8001</span>
+                    </a>
+                    <a href="#" onclick="alert('Dev container runs internally. Use docker logs aq-devsuite-app-dev to monitor.')" class="service-link" style="opacity: 0.7;">
+                        <div>Dev Container</div>
+                        <div style="font-size: 0.75em; opacity: 0.8; margin-top: 2px;">Hot-reload in Docker (internal)</div>
+                        <span class="port-badge">app-dev:8000</span>
+                    </a>
                     <a href="http://api.pocmaster.argentquest.com" target="_blank" class="service-link">
-                        <div>Production API</div>
+                        <div>Production Container</div>
                         <div style="font-size: 0.75em; opacity: 0.8; margin-top: 2px;">Optimized production endpoints</div>
                         <span class="port-badge">api.pocmaster.argentquest.com</span>
                     </a>
-                    <a href="http://api-dev.pocmaster.argentquest.com" target="_blank" class="service-link">
-                        <div>Development API</div>
-                        <div style="font-size: 0.75em; opacity: 0.8; margin-top: 2px;">Hot-reload for testing</div>
-                        <span class="port-badge">api-dev.pocmaster.argentquest.com</span>
-                    </a>
-                    <a href="http://api.pocmaster.argentquest.com/docs" target="_blank" class="service-link">
+                    <a href="http://localhost:8001/docs" target="_blank" class="service-link">
                         <div>API Documentation</div>
                         <div style="font-size: 0.75em; opacity: 0.8; margin-top: 2px;">Interactive Swagger UI</div>
                         <span class="port-badge">/docs</span>
                     </a>
-                    <a href="http://api.pocmaster.argentquest.com/health" target="_blank" class="service-link">
+                    <a href="http://localhost:8001/health" target="_blank" class="service-link">
                         <div>Health Check</div>
                         <div style="font-size: 0.75em; opacity: 0.8; margin-top: 2px;">Service status endpoint</div>
                         <span class="port-badge">/health</span>

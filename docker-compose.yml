@@ -33,6 +33,9 @@ services:
     image: lscr.io/linuxserver/heimdall:latest
     container_name: aq-devsuite-heimdall
     restart: "no"
+    ports:
+      - "8086:80"
+      - "8087:443"
     environment:
       - PUID=1000
       - PGID=1000
@@ -47,6 +50,8 @@ services:
     image: nginx:alpine
     container_name: aq-devsuite-system-monitor
     restart: "no"
+    ports:
+      - "8085:80"
     volumes:
       - ./system-monitor:/usr/share/nginx/html:ro
     networks:
@@ -222,6 +227,8 @@ services:
     image: redis:7.2-alpine
     container_name: aq-devsuite-redis
     restart: unless-stopped
+    ports:
+      - "6379:6379"
     volumes:
       - redis_data:/data
     command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
@@ -241,6 +248,9 @@ services:
     environment:
       - MINIO_ROOT_USER=minioadmin
       - MINIO_ROOT_PASSWORD=minioadmin123
+    ports:
+      - "9000:9000"
+      - "9001:9001"
     volumes:
       - minio_data:/data
     command: server /data --console-address ":9001"
@@ -301,6 +311,8 @@ services:
     image: mongo-express:latest
     container_name: aq-devsuite-mongo-express
     restart: "no"
+    ports:
+      - "8082:8081"
     environment:
       - ME_CONFIG_MONGODB_ADMINUSERNAME=mongoadmin
       - ME_CONFIG_MONGODB_ADMINPASSWORD=mongopass123
@@ -319,6 +331,8 @@ services:
     image: rediscommander/redis-commander:latest
     container_name: aq-devsuite-redis-commander
     restart: "no"
+    ports:
+      - "8084:8081"
     environment:
       - REDIS_HOSTS=local:redis:6379
     networks:
@@ -335,6 +349,8 @@ services:
     image: codercom/code-server:4.20.0
     container_name: aq-devsuite-vscode
     restart: "no"
+    ports:
+      - "8080:8080"
     environment:
       - PASSWORD=${VSCODE_PASSWORD:-changeme}
       - SUDO_PASSWORD=${VSCODE_PASSWORD:-changeme}
