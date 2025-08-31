@@ -1,12 +1,55 @@
 # Argentquest Development Suite
 
-## 🚀 Overview
+[![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi)](https://fastapi.tiangolo.com/)
+[![PostgreSQL](https://img.shields.io/badge/postgresql-%23316192.svg?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![MongoDB](https://img.shields.io/badge/MongoDB-%234ea94b.svg?style=for-the-badge&logo=mongodb&logoColor=white)](https://www.mongodb.com/)
 
+**🚀 22-Container Self-Hosted Development Environment | 90% Cost Savings vs Cloud Services**
 
-A comprehensive, self-hosted development environment with **22 containerized services** including dual FastAPI environments, multiple databases (PostgreSQL+pgvector, MongoDB), management tools (Portainer, Heimdall), development tools (VS Code Server, MCP Inspector), workflow automation (n8n), and simplified single-network architecture. This stack provides enterprise-grade functionality with 90% cost savings compared to cloud services.
+A comprehensive development stack with dual FastAPI environments, multiple databases (PostgreSQL+pgvector, MongoDB), management tools, development tools, and workflow automation - all containerized with simplified single-network architecture.
+
+---
+
+## ⭐ **For Contributors**
+
+**New to the project?** Welcome! We'd love your help making this even better.
+
+### 🚀 **Quick Start for Contributors**
+```bash
+# One-command setup - works on Windows, Mac, and Linux
+git clone https://github.com/argentquest/fastapi-docker-stack.git
+cd fastapi-docker-stack
+
+# Windows users:
+setup.bat
+
+# Mac/Linux users:
+chmod +x setup.sh && ./setup.sh
+
+# Then visit: http://pocmaster.argentquest.com
+```
+
+### 🤝 **Ways to Contribute**
+- 🐛 [Report bugs](../../issues/new?assignees=&labels=bug&template=bug_report.md&title=%5BBUG%5D+)
+- ✨ [Request features](../../issues/new?assignees=&labels=enhancement&template=feature_request.md&title=%5BFEATURE%5D+)
+- 📖 [Improve docs](../../issues/new?assignees=&labels=documentation&template=documentation.md&title=%5BDOCS%5D+)
+- 🔧 [Find good first issues](../../issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
+
+### 🎯 **Perfect for Learning**
+- Docker & containerization
+- Microservices architecture  
+- FastAPI development
+- Database management
+- DevOps workflows
+
+**Read our [Contributing Guide](CONTRIBUTING.md) | Check our [Roadmap](ROADMAP.md) | Follow our [Code of Conduct](CODE_OF_CONDUCT.md)**
+
+---
 
 ## 📋 Table of Contents
 
+- [For Contributors](#-for-contributors)
 - [Quick Start](#-quick-start)
 - [Architecture](#-architecture) 
 - [Service Directory](#-service-directory)
@@ -14,6 +57,7 @@ A comprehensive, self-hosted development environment with **22 containerized ser
 - [Credentials Reference](#-credentials-reference)
 - [Troubleshooting](#-troubleshooting)
 - [Advanced Configuration](#-advanced-configuration)
+- [Community](#-community)
 
 ## 🎯 Project Goals
 
@@ -824,6 +868,39 @@ aq-devsuite-beszel-setup      # Beszel Auto-Setup
 
 ---
 
+## 🌟 **Community**
+
+### 🤝 **Get Involved**
+- **GitHub Issues**: [Report bugs](../../issues) and [request features](../../issues)
+- **GitHub Discussions**: Coming soon for community conversations
+- **Contributing**: Read our [Contributing Guide](CONTRIBUTING.md)
+- **Roadmap**: Check our [project roadmap](ROADMAP.md) to see what's planned
+
+### 💡 **Perfect for**
+- **Learning**: Docker, microservices, FastAPI, database management
+- **Development**: Full-stack application development environment
+- **Testing**: Multi-service integration testing
+- **Proof of Concepts**: Enterprise architecture exploration
+- **Cost Savings**: Replace expensive cloud development environments
+
+### 🏆 **Recognition**
+Contributors to this project are recognized in our community! Check out [CONTRIBUTORS.md](CONTRIBUTORS.md) (coming soon) and help make this project even better.
+
+### ❓ **Getting Help**
+1. **Check Documentation**: Start with our comprehensive guides
+2. **Search Issues**: See if your question has been answered
+3. **Ask Questions**: Create an issue with the 'question' label
+4. **Join Discussions**: Participate in community conversations
+
+### 🚨 **Important Notes**
+- **Development Environment**: This is designed for development and learning
+- **Security Warning**: Default credentials throughout - see [SECURITY.md](SECURITY.md)
+- **Production Use**: Requires significant hardening - not production-ready out of the box
+
+---
+
 **Status:** All 22 services healthy (100%) - Ready for development and testing  
 **Version:** 2.1.0  
 **Last Updated:** August 31, 2025
+
+**🚀 Ready to contribute? Start with a [good first issue](../../issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) or check our [roadmap](ROADMAP.md) for bigger challenges!**
