@@ -10,7 +10,19 @@
       "Bash(docker exec:*)",
       "Bash(docker-compose build:*)",
       "Bash(.venv\\Scripts\\python -m flake8:*)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(mkdir:*)",
+      "Bash(mv:*)",
+      "Bash(cp:*)",
+      "Bash(docker-compose config:*)",
+      "Bash(docker-compose:*)",
+      "Bash(curl:*)",
+      "Bash(docker port:*)",
+      "Bash(docker logs:*)",
+      "Bash(docker inspect:*)",
+      "Bash(grep:*)",
+      "Bash(docker system prune:*)",
+      "Bash(rm:*)"
     ],
     "deny": []
   }

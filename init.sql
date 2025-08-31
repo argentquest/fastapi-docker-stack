@@ -40,11 +40,76 @@ ON ai_test_logs USING ivfflat (embedding vector_cosine_ops)
 WITH (lists = 100);
 
 
--- Section 4: Initial Data Seeding
+-- Section 4: Test Data Tables
+-- -----------------------------
+
+-- Users table for authentication testing
+CREATE TABLE IF NOT EXISTS users (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    last_login TIMESTAMP WITH TIME ZONE
+);
+
+-- Stories table for content testing
+CREATE TABLE IF NOT EXISTS stories (
+    id SERIAL PRIMARY KEY,
+    title VARCHAR(200) NOT NULL,
+    author_id INTEGER REFERENCES users(id),
+    content TEXT,
+    genre VARCHAR(50),
+    status VARCHAR(20) DEFAULT 'draft',
+    word_count INTEGER DEFAULT 0,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- World elements for RAG testing
+CREATE TABLE IF NOT EXISTS world_elements (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    element_type VARCHAR(20) NOT NULL, -- character, location, lore
+    description TEXT,
+    properties JSONB,
+    embedding vector(1024),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Section 5: Initial Data Seeding
 -- ---------------------------------
 
--- Insert some sample data to facilitate immediate testing after setup.
--- ON CONFLICT DO NOTHING prevents errors if the script is run multiple times with the same data.
+-- Insert test users
+INSERT INTO users (username, email, password_hash) VALUES 
+    ('testuser1', 'test1@example.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj7Gm7qJ5u7e'),
+    ('testuser2', 'test2@example.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj7Gm7qJ5u7e'),
+    ('admin', 'admin@example.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj7Gm7qJ5u7e'),
+    ('writer1', 'writer1@example.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj7Gm7qJ5u7e'),
+    ('writer2', 'writer2@example.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj7Gm7qJ5u7e')
+ON CONFLICT (username) DO NOTHING;
+
+-- Insert test stories
+INSERT INTO stories (title, author_id, content, genre, status, word_count) VALUES 
+    ('The Dragon''s Quest', 1, 'In the mystical realm of Aethermoor, a young dragon named Zephyr embarked on a perilous journey to save his homeland from an ancient curse. The crystal caves echoed with his roar as he gathered courage for the trials ahead.', 'fantasy', 'published', 245),
+    ('Cyber Shadows', 2, 'In Neo-Tokyo 2087, hacker Maya Chen discovered a conspiracy that reached the highest levels of the corporate oligarchy. Her fingers danced across holographic keyboards as she infiltrated secure networks.', 'cyberpunk', 'draft', 189),
+    ('The Time Merchant', 3, 'Professor Elias Blackwood had discovered the secret to temporal manipulation, but every transaction came with a price. His shop existed in the space between seconds, serving customers from across history.', 'sci-fi', 'published', 312),
+    ('Whispers in the Wind', 1, 'The old lighthouse keeper knew the secrets that the ocean held. Every night, he would listen to the waves and decode the messages they carried from distant shores.', 'mystery', 'draft', 167),
+    ('The Last Library', 4, 'In a post-apocalyptic world where books were forbidden, Librarian Sarah Martinez protected the last repository of human knowledge hidden beneath the ruins of civilization.', 'dystopian', 'published', 298)
+ON CONFLICT DO NOTHING;
+
+-- Insert world elements
+INSERT INTO world_elements (name, element_type, description, properties) VALUES 
+    ('Zephyr', 'character', 'A young sapphire dragon with silver-tipped scales and the rare ability to control wind currents. Born in the Crystal Peaks, he possesses an ancient bloodline connected to the Air Elementals.', '{"age": 127, "species": "Wind Dragon", "abilities": ["Wind Control", "Flight", "Crystal Sight"], "location": "Crystal Peaks"}'),
+    ('Crystal Peaks', 'location', 'A mountain range of living crystal formations that amplify magical energies. The peaks change color with the seasons and are home to ancient dragon clans. Hidden caves contain powerful artifacts.', '{"climate": "Temperate Magical", "hazards": ["Crystal Storms", "Magic Surges"], "resources": ["Power Crystals", "Rare Minerals"], "inhabitants": ["Dragons", "Crystal Sprites"]}'),
+    ('The Great Sundering', 'lore', 'An ancient cataclysm that shattered the world into floating islands connected by bridges of solidified starlight. This event separated the elemental realms and created the current magical geography.', '{"date": "Age of Stars, Year 0", "cause": "Elemental War", "effects": ["Floating Islands", "Starlight Bridges", "Elemental Separation"], "survivors": ["Dragon Clans", "Elemental Spirits"]}'),
+    ('Maya Chen', 'character', 'Elite netrunner and former corporate security specialist turned underground hacker. Known for her signature ice-blue cybernetic eyes and ability to navigate the most secure networks.', '{"age": 28, "profession": "Netrunner", "skills": ["Ice Breaking", "Data Mining", "Stealth Ops"], "equipment": ["Neural Interface", "Quantum Deck", "Proxy Ghosts"]}'),
+    ('Neo-Tokyo Undercity', 'location', 'A sprawling network of tunnels and abandoned subway systems beneath Neo-Tokyo. Illuminated by neon signs and inhabited by hackers, outcasts, and rogue AIs seeking freedom from corporate control.', '{"population": 50000, "districts": ["Data Haven", "Neon Bazaar", "Ghost Sector"], "access": "Hidden Entrances", "security": "Minimal"}'),
+    ('The Blackwood Paradox', 'lore', 'A temporal theory stating that changing the past creates parallel timelines rather than altering the original. Professor Blackwood''s experiments proved this theory, revolutionizing understanding of time travel.', '{"discoverer": "Professor Elias Blackwood", "year_discovered": 2156, "implications": ["Parallel Timelines", "Temporal Safety", "Causality Protection"], "applications": ["Time Tourism", "Historical Research", "Temporal Trade"]}')
+ON CONFLICT DO NOTHING;
+
+-- Insert AI test logs with sample data
 INSERT INTO ai_test_logs (system_prompt, user_context, ai_result, response_time_ms)
 VALUES 
     ('You are a helpful assistant.', 
@@ -58,7 +123,19 @@ VALUES
     ('You are a technical expert.',
      'Explain how vector databases work.',
      'Vector databases store high-dimensional vectors and enable similarity search through mathematical operations like cosine similarity...',
-     1875)
+     1875),
+    ('You are a world-building assistant.',
+     'Describe a magical crystal cave system.',
+     'The Crystal Peaks rise majestically above the clouds, their faceted surfaces catching and refracting light into spectacular aurora displays. Deep within these living mountains, vast caverns pulse with elemental energy.',
+     2340),
+    ('You are a cyberpunk narrator.',
+     'Describe a hacker''s workspace in the undercity.',
+     'Maya''s data fortress occupies a forgotten maintenance tunnel, walls lined with salvaged screens casting blue light on her face. Fiber optic cables snake across the ceiling like digital vines.',
+     1890),
+    ('You are a sci-fi consultant.',
+     'Explain the implications of time travel.',
+     'The Blackwood Paradox suggests that temporal manipulation creates branching realities rather than changing our timeline. This prevents grandfather paradoxes but raises questions about parallel universe ethics.',
+     2650)
 ON CONFLICT DO NOTHING;
 
 

@@ -1,0 +1,64 @@
+# System Monitor API Container
+# Provides Docker container stats and health monitoring
+
+FROM python:3.11-alpine
+
+# Install system dependencies and build tools
+RUN apk add --no-cache \
+    docker-cli \
+    docker-cli-compose \
+    curl \
+    bash \
+    gcc \
+    musl-dev \
+    linux-headers \
+    python3-dev
+
+WORKDIR /app
+
+# Install Python dependencies (psutil needs build tools)
+RUN pip install --no-cache-dir \
+    aiohttp \
+    aiofiles \
+    psutil
+
+# Install Python dependencies directly (no requirements.txt needed)
+RUN pip install --no-cache-dir \
+    aiohttp==3.9.1 \
+    aiofiles==23.2.0 \
+    psutil==5.9.6
+
+# Copy API server
+COPY api.py /app/
+
+# Create startup script
+RUN cat > /app/start.sh << 'EOF'
+#!/bin/bash
+set -e
+
+echo "Starting System Monitor API..."
+echo "Port: 8083"
+echo "Host: 0.0.0.0"
+
+# Ensure Docker socket is accessible
+if [ -S /var/run/docker.sock ]; then
+    echo "Docker socket found - container monitoring enabled"
+else
+    echo "Warning: Docker socket not found - limited monitoring"
+fi
+
+# Start the API server
+exec python api.py
+EOF
+
+RUN chmod +x /app/start.sh
+
+# Expose port
+EXPOSE 8083
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD curl -f http://localhost:8083/health || exit 1
+
+# Start the application
+CMD ["/app/start.sh"]

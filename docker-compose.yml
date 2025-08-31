@@ -1,63 +1,192 @@
-# V2 POC Docker Compose - Development Environment
-# This file defines all the services, networks, and volumes needed to run the application stack.
+# ArgenQuest Development Suite - Complete Secure Stack (16 Containers)
+# Self-hosted development environment with Let's Encrypt SSL via NPM
+# Domain: pocmaster.argentquest.com
 
 services:
-  # 1. FastAPI Application: The core backend service.
-  app:
-    # Builds the Docker image from the Dockerfile in the current directory.
-    build: .
-    container_name: v2-poc-app
+  # ============================================
+  # DMZ ZONE - Internet Facing
+  # ============================================
+  
+  # Nginx Proxy Manager - Reverse proxy with Let's Encrypt
+  npm:
+    image: 'jc21/nginx-proxy-manager:latest'
+    container_name: aq-devsuite-npm
     restart: unless-stopped
-    # Environment variables passed to the container. Values are sourced from the .env file.
+    ports:
+      - '80:80'      # HTTP (redirects to HTTPS)
+      - '81:81'      # NPM Admin UI
+      - '443:443'    # HTTPS with Let's Encrypt
+    volumes:
+      - ./data/npm/data:/data
+      - ./data/npm/letsencrypt:/etc/letsencrypt
+    networks:
+      - v2_network
     environment:
-      - OPENROUTER_API_KEY=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
-      - DEFAULT_MODEL=openai/gpt-5-nano
+      - DISABLE_IPV6=true
+
+  # ============================================
+  # FRONTEND ZONE - User Facing Services
+  # ============================================
+
+  # Heimdall - Main application dashboard
+  heimdall:
+    image: lscr.io/linuxserver/heimdall:latest
+    container_name: aq-devsuite-heimdall
+    restart: "no"
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=UTC
+    volumes:
+      - heimdall_config:/config
+    networks:
+      - v2_network
+
+  # System Monitor - Docker stats monitoring
+  system-monitor:
+    image: nginx:alpine
+    container_name: aq-devsuite-system-monitor
+    restart: "no"
+    volumes:
+      - ./system-monitor:/usr/share/nginx/html:ro
+    networks:
+      - v2_network
+
+  # Beszel Hub - Server monitoring dashboard
+  beszel:
+    image: henrygd/beszel
+    container_name: aq-devsuite-beszel
+    restart: unless-stopped
+    ports:
+      - '8090:8090'
+    volumes:
+      - beszel_data:/beszel_data
+    networks:
+      - v2_network
+    environment:
+      - PORT=8090
+      - BESZEL_ADMIN_EMAIL=admin@example.com
+      - BESZEL_ADMIN_PASSWORD=changeme
+
+  # Beszel Agent - Monitors Docker host and containers
+  beszel-agent:
+    image: henrygd/beszel-agent
+    container_name: aq-devsuite-beszel-agent
+    restart: unless-stopped
+    ports:
+      - '45876:45876'
+    networks:
+      - v2_network
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      - PORT=45876
+      - KEY=ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICygZKxaz3lRVCvTbytqhAQjEzGAPqcaP+50c2hjcL1D
+      - DOCKER_HOST=unix:///var/run/docker.sock
+    depends_on:
+      - beszel
+
+  # Monitor API - Backend for system monitoring
+  monitor-api:
+    build:
+      context: ./system-monitor
+      dockerfile: Dockerfile.api
+    container_name: aq-devsuite-monitor-api
+    restart: "no"
+    ports:
+      - "8083:8083"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - .:/app/project:ro
+    networks:
+      - v2_network
+
+  # ============================================
+  # API ZONE - Application Services
+  # ============================================
+  
+  # FastAPI Development - Hot reload enabled
+  app-dev:
+    build: .
+    container_name: aq-devsuite-app-dev
+    restart: "no"
+    environment:
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-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}
+      - DEFAULT_MODEL=${DEFAULT_MODEL:-openai/gpt-5-nano}
       - DATABASE_URL=postgresql://pocuser:pocpass@postgres:5432/poc_db
+      - MONGODB_URL=mongodb://mongoadmin:mongopass123@mongodb:27017/poc_mongo_db
       - REDIS_URL=redis://redis:6379
       - MINIO_ENDPOINT=minio:9000
       - MINIO_ACCESS_KEY=minioadmin
       - MINIO_SECRET_KEY=minioadmin123
       - MINIO_SECURE=false
       - APP_ENV=development
-      - LOG_LEVEL=INFO
-    # Ensures that the app service starts only after its dependencies are healthy.
+      - LOG_LEVEL=DEBUG
     depends_on:
       postgres:
+        condition: service_healthy
+      mongodb:
         condition: service_healthy
       redis:
         condition: service_healthy
       minio:
         condition: service_healthy
-    ports:
-      - "8000:8000"
-    # Healthcheck verifies the app is running and responsive.
+    volumes:
+      - ./app:/app/app
+    command: ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    networks:
+      - v2_network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 45s
-      timeout: 120s
+      interval: 30s
+      timeout: 10s
       retries: 3
-      # start_period gives the container time to initialize before the healthcheck starts.
       start_period: 60s
 
-  # 2. Nginx Proxy Manager: Handles reverse proxy, SSL, and routing.
-  npm:
-    image: 'jc21/nginx-proxy-manager:latest'
-    container_name: v2-poc-npm
+  # FastAPI Production - Gunicorn with workers
+  app-prod:
+    build: .
+    container_name: aq-devsuite-app-prod
     restart: unless-stopped
-    ports:
-      - '80:80'   # Standard HTTP
-      - '81:81'   # Admin UI
-      - '443:443' # Standard HTTPS
-    volumes:
-      - ./data/npm/data:/data
-      - ./data/npm/letsencrypt:/etc/letsencrypt
+    environment:
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-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}
+      - DEFAULT_MODEL=${DEFAULT_MODEL:-openai/gpt-5-nano}
+      - DATABASE_URL=postgresql://pocuser:pocpass@postgres:5432/poc_db
+      - MONGODB_URL=mongodb://mongoadmin:mongopass123@mongodb:27017/poc_mongo_db
+      - REDIS_URL=redis://redis:6379
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ACCESS_KEY=minioadmin
+      - MINIO_SECRET_KEY=minioadmin123
+      - MINIO_SECURE=false
+      - APP_ENV=production
+      - LOG_LEVEL=INFO
     depends_on:
-      - app
+      postgres:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    command: ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]
+    networks:
+      - v2_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
 
-  # 3. PostgreSQL with pgvector: Database for structured data and vector embeddings.
+  # ============================================
+  # BACKEND ZONE - Data Layer (Isolated)
+  # ============================================
+
+  # PostgreSQL with pgvector
   postgres:
     image: pgvector/pgvector:pg16
-    container_name: v2-poc-postgres
+    container_name: aq-devsuite-postgres
     restart: unless-stopped
     environment:
       - POSTGRES_USER=pocuser
@@ -65,19 +194,16 @@ services:
       - POSTGRES_DB=poc_db
       - POSTGRES_INITDB_ARGS=--encoding=UTF-8
     volumes:
-      # Persists database data across container restarts.
       - postgres_data:/var/lib/postgresql/data
-      # Runs the init.sql script on first startup to initialize the database.
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
-    ports:
-      - "5432:5432"
+    networks:
+      - v2_network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U pocuser -d poc_db"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 30s
-    # Custom command to start postgres with pgvector and performance tuning.
     command: >
       postgres
       -c shared_preload_libraries='vector'
@@ -85,21 +211,57 @@ services:
       -c shared_buffers=256MB
       -c effective_cache_size=1GB
 
-  # 4. MinIO: S3-compatible object storage for unstructured data.
+  # MongoDB - NoSQL Document Database
+  mongodb:
+    image: mongo:7.0
+    container_name: aq-devsuite-mongodb
+    restart: unless-stopped
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=mongoadmin
+      - MONGO_INITDB_ROOT_PASSWORD=mongopass123
+      - MONGO_INITDB_DATABASE=poc_mongo_db
+    volumes:
+      - mongodb_data:/data/db
+      - mongodb_config:/data/configdb
+      - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    networks:
+      - v2_network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # Redis - In-memory cache
+  redis:
+    image: redis:7.2-alpine
+    container_name: aq-devsuite-redis
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    networks:
+      - v2_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # MinIO - S3-compatible object storage
   minio:
     image: minio/minio:latest
-    container_name: v2-poc-minio
+    container_name: aq-devsuite-minio
     restart: unless-stopped
     environment:
       - MINIO_ROOT_USER=minioadmin
       - MINIO_ROOT_PASSWORD=minioadmin123
     volumes:
       - minio_data:/data
-    ports:
-      - "9000:9000" # S3 API
-      - "9001:9001" # Web Console
-    # Starts the minio server and exposes the console on port 9001.
     command: server /data --console-address ":9001"
+    networks:
+      - v2_network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
       interval: 30s
@@ -107,74 +269,243 @@ services:
       retries: 3
       start_period: 30s
 
-  # 5. Redis: In-memory cache for session data and frequently accessed information.
-  redis:
-    image: redis:7.2-alpine
-    container_name: v2-poc-redis
-    restart: unless-stopped
-    volumes:
-      - redis_data:/data
-    ports:
-      - "6379:6379"
-    # Custom command to enable persistence and set memory policies.
-    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
+  # ============================================
+  # MANAGEMENT ZONE - Admin Tools (Isolated)
+  # ============================================
 
-  # 6. pgAdmin: Web-based GUI for managing the PostgreSQL database.
+  # Portainer CE - Docker management
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: aq-devsuite-portainer
+    restart: "no"
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+    ports:
+      - "9443:9443"  # Direct HTTPS access
+    networks:
+      - v2_network
+    command: --bind-https=":9443" --http-disabled
+
+  # pgAdmin - PostgreSQL management
   pgadmin:
     image: dpage/pgadmin4
-    container_name: v2-poc-pgadmin
-    restart: unless-stopped
+    container_name: aq-devsuite-pgadmin
+    restart: "no"
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@example.com
       PGADMIN_DEFAULT_PASSWORD: admin
-    ports:
-      - "5050:80"
-    depends_on:
-      - postgres
+      PGADMIN_LISTEN_ADDRESS: 0.0.0.0
     volumes:
       - pgadmin_data:/var/lib/pgadmin
+    ports:
+      - "5050:80"  # Direct HTTP access
+    networks:
+      - v2_network
+    depends_on:
+      - postgres
 
-  # 7. Redis Commander: Web-based GUI for managing the Redis cache.
+  # Mongo Express - MongoDB management
+  mongo-express:
+    image: mongo-express:latest
+    container_name: aq-devsuite-mongo-express
+    restart: "no"
+    environment:
+      - ME_CONFIG_MONGODB_ADMINUSERNAME=mongoadmin
+      - ME_CONFIG_MONGODB_ADMINPASSWORD=mongopass123
+      - ME_CONFIG_MONGODB_URL=mongodb://mongoadmin:mongopass123@mongodb:27017/
+      - ME_CONFIG_MONGODB_ENABLE_ADMIN=true
+      - ME_CONFIG_BASICAUTH_USERNAME=admin
+      - ME_CONFIG_BASICAUTH_PASSWORD=admin
+    networks:
+      - v2_network
+    depends_on:
+      mongodb:
+        condition: service_healthy
+
+  # Redis Commander - Redis management
   redis-commander:
     image: rediscommander/redis-commander:latest
-    container_name: v2-poc-redis-commander
-    restart: unless-stopped
+    container_name: aq-devsuite-redis-commander
+    restart: "no"
     environment:
-      # Tells Redis Commander how to connect to the redis service.
       - REDIS_HOSTS=local:redis:6379
-    ports:
-      - "8081:8081"
+    networks:
+      - v2_network
     depends_on:
       - redis
 
-  # 8. Dashboard: A simple menu system to access all web UIs.
-  dashboard:
-    image: nginx:alpine
-    container_name: v2-poc-dashboard
-    restart: unless-stopped
-    ports:
-      - "8082:80"
-    volumes:
-      # Mounts the static HTML file as read-only for security.
-      - ./dashboard:/usr/share/nginx/html:ro
+  # ============================================
+  # DEVELOPMENT ZONE - Dev Tools (Isolated)
+  # ============================================
 
-# Named volumes for data persistence across container restarts.
+  # VS Code Server - Browser-based IDE
+  vscode:
+    image: codercom/code-server:4.20.0
+    container_name: aq-devsuite-vscode
+    restart: "no"
+    environment:
+      - PASSWORD=${VSCODE_PASSWORD:-changeme}
+      - SUDO_PASSWORD=${VSCODE_PASSWORD:-changeme}
+    volumes:
+      - ./:/home/coder/project
+      - vscode_config:/home/coder/.config
+      - vscode_extensions:/home/coder/.local
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - v2_network
+    user: "0:0"
+
+  # MCP Inspector - MCP protocol testing
+  mcp-inspector:
+    build:
+      context: ./mcp-inspector
+      dockerfile: Dockerfile
+    container_name: aq-devsuite-mcp-inspector
+    restart: "no"
+    ports:
+      - "5173:5173"  # Direct HTTP access
+    environment:
+      - NODE_ENV=development
+    networks:
+      - v2_network
+
+  # n8n - Workflow automation
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: aq-devsuite-n8n
+    restart: "no"
+    ports:
+      - "5678:5678"  # Direct HTTP access
+    environment:
+      - N8N_HOST=0.0.0.0
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - WEBHOOK_URL=http://n8n.pocmaster.argentquest.com
+      - GENERIC_TIMEZONE=UTC
+      - N8N_USER_MANAGEMENT_DISABLED=true
+      - N8N_DIAGNOSTICS_ENABLED=false
+      - N8N_VERSION_NOTIFICATIONS_ENABLED=false
+      - N8N_TEMPLATES_ENABLED=true
+      - N8N_ONBOARDING_FLOW_DISABLED=true
+      - N8N_METRICS=false
+    volumes:
+      - n8n_data:/home/node/.n8n
+    networks:
+      - v2_network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # Jupyter Lab - Data science and analysis
+  jupyter:
+    image: jupyter/datascience-notebook:latest
+    container_name: aq-devsuite-jupyter
+    restart: "no"
+    ports:
+      - "8888:8888"  # Direct HTTP access
+    environment:
+      - JUPYTER_ENABLE_LAB=yes
+      - JUPYTER_TOKEN=changeme
+      - GRANT_SUDO=yes
+      - CHOWN_HOME=yes
+    volumes:
+      - jupyter_data:/home/jovyan/work
+      - ./:/home/jovyan/work/project:ro
+    networks:
+      - v2_network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+
+  # NPM Auto-Setup - Automatically configures proxy hosts
+  npm-setup:
+    build:
+      context: ./scripts
+      dockerfile: Dockerfile.npm-setup
+    container_name: aq-devsuite-npm-setup
+    restart: "no"
+    networks:
+      - v2_network
+    depends_on:
+      - npm
+      - app-prod
+      - app-dev
+      - pgadmin
+      - mongo-express
+      - redis-commander
+      - minio
+      - portainer
+      - heimdall
+      - vscode
+      - mcp-inspector
+      - n8n
+      - jupyter
+
+  # Beszel Auto-Setup - Generates keys and configures monitoring
+  beszel-setup:
+    build:
+      context: ./scripts
+      dockerfile: Dockerfile.beszel-setup
+    container_name: aq-devsuite-beszel-setup
+    restart: "no"
+    networks:
+      - v2_network
+    volumes:
+      - ./docker-compose.yml:/workspace/docker-compose.yml
+      - beszel_keys:/keys
+    depends_on:
+      - beszel
+      - beszel-agent
+
+# ============================================
+# NETWORK DEFINITIONS (Simplified Single Network)
+# ============================================
+networks:
+  v2_network:
+    name: aq-devsuite-network
+    driver: bridge
+
+# ============================================
+# VOLUMES (Data Persistence)
+# ============================================
 volumes:
+  # Database data
   postgres_data:
     driver: local
-  minio_data:
+  mongodb_data:
+    driver: local
+  mongodb_config:
     driver: local
   redis_data:
     driver: local
+  minio_data:
+    driver: local
+  
+  # Application configs
   pgadmin_data:
     driver: local
-
-# Defines the network for inter-container communication.
-networks:
-  default:
-    name: v2-poc-network
+  heimdall_config:
+    driver: local
+  portainer_data:
+    driver: local
+  vscode_config:
+    driver: local
+  vscode_extensions:
+    driver: local
+  n8n_data:
+    driver: local
+  jupyter_data:
+    driver: local
+  beszel_data:
+    driver: local
+  beszel_keys:
+    driver: local

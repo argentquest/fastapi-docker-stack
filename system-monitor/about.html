@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About Argentquest Development Suite</title>
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            background: linear-gradient(135deg, #2c3e50 0%, #764ba2 100%);
+            color: #333; 
+            margin: 0; 
+            padding: 20px; 
+            min-height: 100vh;
+        }
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto;
+        }
+        h1 { 
+            color: white; 
+            text-align: center; 
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        .nav-bar {
+            background: rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+        .nav-link {
+            color: white;
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            transition: background-color 0.2s;
+            font-weight: 500;
+        }
+        .nav-link:hover {
+            background: rgba(255,255,255,0.2);
+        }
+        .nav-link.active {
+            background: rgba(255,255,255,0.3);
+        }
+        .content-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            padding: 30px;
+            margin-bottom: 20px;
+        }
+        .section-title {
+            font-size: 1.5em;
+            font-weight: 600;
+            color: #1c1e21;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #2c3e50;
+            padding-bottom: 10px;
+        }
+        .purpose-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .purpose-card {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            border-left: 4px solid #2c3e50;
+        }
+        .purpose-title {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        .purpose-description {
+            color: #666;
+            line-height: 1.5;
+            margin-bottom: 15px;
+        }
+        .container-list {
+            list-style: none;
+            padding: 0;
+        }
+        .container-item {
+            background: white;
+            margin: 5px 0;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 0.9em;
+            border-left: 3px solid #28a745;
+        }
+        .stats-highlight {
+            background: linear-gradient(135deg, #2c3e50 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .stats-number {
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .tech-stack {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .tech-item {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 6px;
+            text-align: center;
+        }
+        .tech-name {
+            font-weight: 600;
+            color: #1976d2;
+            margin-bottom: 5px;
+        }
+        .tech-role {
+            font-size: 0.9em;
+            color: #666;
+        }
+        .use-cases {
+            background: #f1f8e9;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .use-case {
+            margin: 10px 0;
+            padding: 10px;
+            background: white;
+            border-radius: 4px;
+            border-left: 3px solid #4caf50;
+        }
+        .cost-savings {
+            background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>About Argentquest Development Suite</h1>
+        
+        <div class="nav-bar">
+            <a href="index.html" class="nav-link">Dashboard</a>
+            <a href="status.html" class="nav-link">System Status</a>
+            <a href="about.html" class="nav-link active">About</a>
+        </div>
+
+        <div class="content-card">
+            <div class="section-title">What is the Argentquest Development Suite?</div>
+            <p style="font-size: 1.1em; line-height: 1.6; color: #333;">
+                The Argentquest Development Suite is a comprehensive, self-hosted development and production environment 
+                built with open-source technologies. This containerized infrastructure provides enterprise-grade functionality 
+                while maintaining full control over your data and deployment.
+            </p>
+
+            <div class="stats-highlight">
+                <div class="stats-number">16</div>
+                <div>Containerized Services</div>
+                <div style="margin-top: 10px; font-size: 0.9em;">
+                    Complete self-hosted development ecosystem
+                </div>
+            </div>
+        </div>
+
+        <div class="content-card">
+            <div class="section-title">Origins & AI Experimentation</div>
+            <p style="font-size: 1.1em; line-height: 1.6; color: #333; margin-bottom: 20px;">
+                This stack originated from the need to experiment with AI chat applications using OpenAI's GPT models and 
+                explore the rapidly evolving landscape of generative AI technologies. What began as a simple FastAPI backend 
+                for testing AI conversations has evolved into a comprehensive development suite that demonstrates practical 
+                alternatives to expensive cloud AI services.
+            </p>
+            
+            <p style="font-size: 1.1em; line-height: 1.6; color: #333; margin-bottom: 20px;">
+                The demo code showcases a <strong>FastAPI-based AI Storytelling Assistant</strong> with integrated world-building 
+                and RAG (Retrieval Augmented Generation) capabilities. Using <strong>OpenRouter</strong> as the LLM provider, 
+                the application demonstrates how to build production-ready AI applications without vendor lock-in to expensive 
+                cloud AI services. The codebase includes real-time WebSocket connections for AI-assisted writing, vector 
+                embeddings with PostgreSQL+pgvector, and background job processing for document ingestion.
+            </p>
+
+            <p style="font-size: 1.0em; line-height: 1.6; color: #666; margin-bottom: 20px; font-style: italic;">
+                Many of the AI storytelling concepts and architectural patterns demonstrated in this stack were inspired by 
+                <strong><a href="https://inkandquill.io" target="_blank" style="color: #2c3e50; text-decoration: none;">Ink & Quill</a></strong>, 
+                a SaaS application for AI-assisted creative writing. This self-hosted implementation explores how such 
+                cloud-based AI writing tools can be rebuilt using open-source technologies and cost-effective infrastructure, 
+                demonstrating that sophisticated AI applications previously only available as expensive SaaS offerings can be 
+                developed and deployed independently.
+            </p>
+
+            <div style="background: #e8f4fd; border-radius: 8px; padding: 20px; margin: 20px 0; border-left: 4px solid #2196f3;">
+                <h4 style="color: #1976d2; margin: 0 0 15px 0;">OpenRouter Integration</h4>
+                <p style="color: #333; line-height: 1.6; margin: 0;">
+                    The application uses <strong>OpenRouter</strong> to access multiple AI models (including GPT-5 Nano) through 
+                    a single API, providing cost-effective AI capabilities with model flexibility. This approach eliminates the 
+                    need for direct OpenAI API subscriptions while maintaining access to cutting-edge language models. The demo 
+                    includes comprehensive cost tracking, token usage monitoring, and dynamic model configuration for optimal 
+                    performance and cost management.
+                </p>
+            </div>
+        </div>
+
+        <div class="content-card">
+            <div class="section-title">Core Use Cases</div>
+            <div class="use-cases">
+                <div class="use-case">
+                    <strong>AI Application Development:</strong> FastAPI backend with OpenRouter integration, vector search via pgvector, 
+                    and document storage for building modern AI-powered applications.
+                </div>
+                <div class="use-case">
+                    <strong>Data Science & Analytics:</strong> Jupyter Lab environment with Python, R, and Julia kernels for 
+                    machine learning experiments and data analysis workflows.
+                </div>
+                <div class="use-case">
+                    <strong>Workflow Automation:</strong> n8n visual workflow builder for automating business processes, 
+                    data pipelines, and system integrations.
+                </div>
+                <div class="use-case">
+                    <strong>Full-Stack Development:</strong> Complete development environment with browser-based VS Code, 
+                    database management tools, and hot-reload capabilities.
+                </div>
+                <div class="use-case">
+                    <strong>Self-Hosted Infrastructure:</strong> Replace expensive cloud services with open-source alternatives 
+                    while maintaining professional-grade functionality and security.
+                </div>
+            </div>
+        </div>
+
+        <div class="content-card">
+            <div class="section-title">Container Architecture Overview</div>
+            <div class="purpose-grid">
+                <div class="purpose-card">
+                    <div class="purpose-title">Frontend & Routing</div>
+                    <div class="purpose-description">
+                        Public-facing services and traffic management with SSL termination and subdomain routing.
+                    </div>
+                    <ul class="container-list">
+                        <li class="container-item">Nginx Proxy Manager - Reverse proxy with Let's Encrypt SSL</li>
+                        <li class="container-item">Heimdall Dashboard - Centralized application launcher</li>
+                        <li class="container-item">System Monitor - Real-time container monitoring</li>
+                    </ul>
+                </div>
+
+                <div class="purpose-card">
+                    <div class="purpose-title">Application Services</div>
+                    <div class="purpose-description">
+                        Core FastAPI applications providing REST APIs and WebSocket connections for AI-powered features.
+                    </div>
+                    <ul class="container-list">
+                        <li class="container-item">FastAPI Production - Main application server</li>
+                        <li class="container-item">FastAPI Development - Hot-reload development server</li>
+                        <li class="container-item">Monitor API - Container control backend</li>
+                    </ul>
+                </div>
+
+                <div class="purpose-card">
+                    <div class="purpose-title">Data Layer</div>
+                    <div class="purpose-description">
+                        Multi-database architecture supporting relational data, documents, vector search, and caching.
+                    </div>
+                    <ul class="container-list">
+                        <li class="container-item">PostgreSQL + pgvector - Main database with vector search</li>
+                        <li class="container-item">MongoDB - NoSQL document database</li>
+                        <li class="container-item">Redis - In-memory cache and session store</li>
+                        <li class="container-item">MinIO - S3-compatible object storage</li>
+                    </ul>
+                </div>
+
+                <div class="purpose-card">
+                    <div class="purpose-title">Database Management</div>
+                    <div class="purpose-description">
+                        Web-based administration interfaces for all database systems with full CRUD capabilities.
+                    </div>
+                    <ul class="container-list">
+                        <li class="container-item">pgAdmin - PostgreSQL web administration</li>
+                        <li class="container-item">MongoDB Express - MongoDB web interface</li>
+                        <li class="container-item">Redis Commander - Redis key-value browser</li>
+                    </ul>
+                </div>
+
+                <div class="purpose-card">
+                    <div class="purpose-title">Development Tools</div>
+                    <div class="purpose-description">
+                        Complete development environment accessible through web browsers for coding and testing.
+                    </div>
+                    <ul class="container-list">
+                        <li class="container-item">VS Code Server - Full IDE in browser</li>
+                        <li class="container-item">MCP Inspector - Model Context Protocol testing</li>
+                        <li class="container-item">Jupyter Lab - Data science notebooks</li>
+                    </ul>
+                </div>
+
+                <div class="purpose-card">
+                    <div class="purpose-title">Automation & Infrastructure</div>
+                    <div class="purpose-description">
+                        Container management and workflow automation for DevOps and business process automation.
+                    </div>
+                    <ul class="container-list">
+                        <li class="container-item">Portainer - Docker container management UI</li>
+                        <li class="container-item">n8n - Visual workflow automation</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="content-card">
+            <div class="section-title">Technology Stack</div>
+            <div class="tech-stack">
+                <div class="tech-item">
+                    <div class="tech-name">FastAPI</div>
+                    <div class="tech-role">Modern Python web framework</div>
+                </div>
+                <div class="tech-item">
+                    <div class="tech-name">PostgreSQL + pgvector</div>
+                    <div class="tech-role">Vector database for AI embeddings</div>
+                </div>
+                <div class="tech-item">
+                    <div class="tech-name">MongoDB</div>
+                    <div class="tech-role">Document database</div>
+                </div>
+                <div class="tech-item">
+                    <div class="tech-name">Redis</div>
+                    <div class="tech-role">In-memory cache</div>
+                </div>
+                <div class="tech-item">
+                    <div class="tech-name">MinIO</div>
+                    <div class="tech-role">S3-compatible storage</div>
+                </div>
+                <div class="tech-item">
+                    <div class="tech-name">OpenRouter</div>
+                    <div class="tech-role">LLM API provider (GPT-5 Nano)</div>
+                </div>
+                <div class="tech-item">
+                    <div class="tech-name">Docker</div>
+                    <div class="tech-role">Containerization platform</div>
+                </div>
+                <div class="tech-item">
+                    <div class="tech-name">Nginx</div>
+                    <div class="tech-role">Reverse proxy with SSL</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="content-card">
+            <div class="section-title">About the Author</div>
+            <div style="background: #f8f9fa; border-radius: 8px; padding: 25px; border-left: 4px solid #2c3e50;">
+                <div style="display: grid; grid-template-columns: auto 1fr; gap: 20px; align-items: start;">
+                    <div style="text-align: center;">
+                        <div style="width: 80px; height: 80px; background: linear-gradient(135deg, #2c3e50 0%, #764ba2 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 2em; font-weight: bold;">ES</div>
+                    </div>
+                    <div>
+                        <h3 style="color: #2c3e50; margin: 0 0 10px 0;">Eric Silver</h3>
+                        <p style="color: #666; margin: 0 0 15px 0; font-style: italic;">Founder & CEO, Argentquest</p>
+                        <p style="line-height: 1.6; color: #333; margin-bottom: 15px;">
+                            Eric Silver is a seasoned technology leader and entrepreneur who founded Argentquest, a company focused on 
+                            innovative software solutions and development services. With extensive experience in modern web technologies, 
+                            containerization, and AI integration, Eric designed this V2 POC stack to demonstrate practical, 
+                            cost-effective alternatives to traditional cloud infrastructure.
+                        </p>
+                        <p style="line-height: 1.6; color: #333; margin-bottom: 15px;">
+                            The Argentquest Development Suite reflects his expertise in Docker orchestration, database architecture, 
+                            and modern DevOps practices. The stack serves as both a learning platform and a production-ready foundation 
+                            for AI-powered applications and data science workflows.
+                        </p>
+                        <div style="margin-top: 20px;">
+                            <a href="https://www.linkedin.com/in/eric-silver-tx/" target="_blank" style="color: #2c3e50; text-decoration: none; font-weight: 500;">Connect on LinkedIn →</a>
+                            <span style="color: #ccc; margin: 0 10px;">|</span>
+                            <span style="color: #666;">Argentquest - Innovative Software Solutions</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="background: #e8f4fd; border-radius: 8px; padding: 20px; margin-top: 20px; border-left: 4px solid #2196f3;">
+                <h4 style="color: #1976d2; margin: 0 0 10px 0;">Built with AI Assistance</h4>
+                <p style="color: #333; line-height: 1.6; margin: 0;">
+                    This Argentquest Development Suite was developed with significant assistance from Generative AI, 
+                    primarily using <strong>Claude Code</strong> by Anthropic. The AI collaboration enabled rapid 
+                    prototyping, comprehensive documentation, and sophisticated container orchestration that would 
+                    have taken significantly longer to develop manually. This demonstrates the power of human-AI 
+                    collaboration in modern software development.
+                </p>
+            </div>
+        </div>
+
+        <div class="content-card">
+            <div class="section-title">Target Audiences</div>
+            <div class="purpose-grid">
+                <div class="purpose-card">
+                    <div class="purpose-title">AI Developers</div>
+                    <div class="purpose-description">
+                        Build and deploy AI applications with vector search, embeddings, and LLM integration 
+                        without expensive cloud AI services.
+                    </div>
+                </div>
+
+                <div class="purpose-card">
+                    <div class="purpose-title">Data Scientists</div>
+                    <div class="purpose-description">
+                        Complete data science environment with Jupyter, multiple databases, and 
+                        automated workflow capabilities for ML pipelines.
+                    </div>
+                </div>
+
+                <div class="purpose-card">
+                    <div class="purpose-title">Full-Stack Developers</div>
+                    <div class="purpose-description">
+                        Modern development stack with hot-reload, browser-based IDE, and comprehensive 
+                        database support for rapid prototyping.
+                    </div>
+                </div>
+
+                <div class="purpose-card">
+                    <div class="purpose-title">DevOps Engineers</div>
+                    <div class="purpose-description">
+                        Self-hosted infrastructure with container management, automated workflows, 
+                        and monitoring for learning and production deployments.
+                    </div>
+                </div>
+
+                <div class="purpose-card">
+                    <div class="purpose-title">Startups & Small Teams</div>
+                    <div class="purpose-description">
+                        Enterprise-grade infrastructure without enterprise costs. Perfect for MVPs, 
+                        prototypes, and scaling cost-effectively.
+                    </div>
+                </div>
+
+                <div class="purpose-card">
+                    <div class="purpose-title">Learning & Experimentation</div>
+                    <div class="purpose-description">
+                        Hands-on experience with modern containerized architectures, databases, 
+                        and AI technologies in a safe, isolated environment.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="content-card">
+            <div class="section-title">Key Features</div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px;">
+                <div style="background: #e8f5e8; padding: 15px; border-radius: 6px;">
+                    <strong>Single Network Architecture</strong><br>
+                    Simplified networking with service discovery via container names
+                </div>
+                <div style="background: #e3f2fd; padding: 15px; border-radius: 6px;">
+                    <strong>Automated SSL</strong><br>
+                    Let's Encrypt certificates with automatic renewal via NPM
+                </div>
+                <div style="background: #fff3e0; padding: 15px; border-radius: 6px;">
+                    <strong>Subdomain Routing</strong><br>
+                    Professional URLs for all services with automated NPM configuration
+                </div>
+                <div style="background: #fce4ec; padding: 15px; border-radius: 6px;">
+                    <strong>Data Persistence</strong><br>
+                    All data stored in Docker volumes for easy backup and migration
+                </div>
+                <div style="background: #f3e5f5; padding: 15px; border-radius: 6px;">
+                    <strong>Development Ready</strong><br>
+                    Hot-reload, debugging, and comprehensive development tools included
+                </div>
+                <div style="background: #e0f2f1; padding: 15px; border-radius: 6px;">
+                    <strong>Production Capable</strong><br>
+                    Gunicorn workers, health checks, and monitoring for production deployment
+                </div>
+            </div>
+        </div>
+
+        <div class="content-card">
+            <div class="section-title">Getting Started</div>
+            <p style="margin-bottom: 20px;">This stack is designed for developers who want to:</p>
+            <ul style="list-style-type: none; padding: 0;">
+                <li style="background: #f8f9fa; margin: 8px 0; padding: 12px; border-radius: 4px; border-left: 3px solid #2c3e50;">
+                    <strong>Self-Hosted Infrastructure:</strong> Build and deploy applications with complete control over your environment
+                </li>
+                <li style="background: #f8f9fa; margin: 8px 0; padding: 12px; border-radius: 4px; border-left: 3px solid #2c3e50;">
+                    <strong>Learn Modern Architecture:</strong> Hands-on experience with containers, microservices, and AI integration
+                </li>
+                <li style="background: #f8f9fa; margin: 8px 0; padding: 12px; border-radius: 4px; border-left: 3px solid #2c3e50;">
+                    <strong>Rapid Prototyping:</strong> Complete development environment ready in minutes
+                </li>
+                <li style="background: #f8f9fa; margin: 8px 0; padding: 12px; border-radius: 4px; border-left: 3px solid #2c3e50;">
+                    <strong>Data Control:</strong> Keep sensitive data on-premises with full security control
+                </li>
+                <li style="background: #f8f9fa; margin: 8px 0; padding: 12px; border-radius: 4px; border-left: 3px solid #2c3e50;">
+                    <strong>Scale Efficiently:</strong> Start small and scale components as needed
+                </li>
+            </ul>
+        </div>
+
+        <div class="content-card">
+            <div class="section-title">Network Architecture</div>
+            <p>All 16 containers operate on a single Docker bridge network (<code>v2_network</code>) for simplified 
+            communication and management. Services discover each other using container names, eliminating complex 
+            networking configurations.</p>
+            
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; font-family: monospace;">
+                Internet → NPM (ports 80/443/81) → v2_network → 16 Containers
+            </div>
+
+            <p><strong>External Access:</strong> Only NPM ports (80, 443, 81) are exposed to the internet. 
+            All other services are accessed through NPM subdomains or direct localhost ports for security.</p>
+        </div>
+
+        <div class="footer" style="text-align: center; color: rgba(255,255,255,0.8); margin-top: 40px;">
+            <p>Argentquest Development Suite - Self-Hosted Development & Production Environment</p>
+            <p>Built with Docker • Powered by Open Source • Designed for Developers</p>
+        </div>
+    </div>
+</body>
+</html>

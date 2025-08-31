@@ -1,0 +1,22 @@
+FROM alpine:latest
+
+# Install dependencies
+RUN apk add --no-cache \
+    openssh-keygen \
+    curl \
+    jq \
+    python3 \
+    py3-pip \
+    py3-requests
+
+# Copy setup script
+COPY beszel-auto-setup.py /setup.py
+
+# Make executable
+RUN chmod +x /setup.py
+
+# Set working directory
+WORKDIR /app
+
+# Run setup script
+CMD ["python3", "/setup.py"]

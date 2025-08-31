@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Argentquest Development Suite - Status</title>
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: #333; 
+            margin: 0; 
+            padding: 20px; 
+            min-height: 100vh;
+        }
+        .container { 
+            max-width: 1400px; 
+            margin: 0 auto;
+        }
+        h1 { 
+            color: white; 
+            text-align: center; 
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        .nav-bar {
+            background: rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+        .nav-link {
+            color: white;
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            transition: background-color 0.2s;
+            font-weight: 500;
+        }
+        .nav-link:hover {
+            background: rgba(255,255,255,0.2);
+        }
+        .nav-link.active {
+            background: rgba(255,255,255,0.3);
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            padding: 24px;
+        }
+        .stat-title {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: #1c1e21;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .containers-table {
+            width: 100%;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            overflow: hidden;
+        }
+        .table-header {
+            background: #f8f9fa;
+            padding: 20px;
+            border-bottom: 1px solid #e9ecef;
+            font-weight: 600;
+            color: #495057;
+        }
+        .container-row {
+            padding: 16px 20px;
+            border-bottom: 1px solid #e9ecef;
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr 1fr;
+            gap: 15px;
+            align-items: center;
+            font-size: 0.9em;
+        }
+        .container-row:last-child {
+            border-bottom: none;
+        }
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: 500;
+            text-align: center;
+        }
+        .status-running {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status-stopped {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .status-healthy {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+        .progress-low { background: #28a745; }
+        .progress-medium { background: #ffc107; }
+        .progress-high { background: #dc3545; }
+        .metric-value {
+            font-size: 2em;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        .metric-label {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 4px;
+        }
+        .refresh-info {
+            text-align: center;
+            color: rgba(255,255,255,0.8);
+            margin-top: 20px;
+            font-size: 0.9em;
+        }
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 12px;
+            border-radius: 6px;
+            margin: 10px 0;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #2c3e50;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .action-buttons {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+        .action-btn {
+            padding: 4px 8px;
+            border: none;
+            border-radius: 4px;
+            font-size: 0.75em;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            display: inline-block;
+            min-width: 50px;
+            text-align: center;
+        }
+        .action-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .action-btn.stop {
+            background: #dc3545;
+            color: white;
+        }
+        .action-btn.stop:hover {
+            background: #c82333;
+        }
+        .action-btn.restart {
+            background: #28a745;
+            color: white;
+        }
+        .action-btn.restart:hover {
+            background: #218838;
+        }
+        .action-btn.logs {
+            background: #17a2b8;
+            color: white;
+        }
+        .action-btn.logs:hover {
+            background: #138496;
+        }
+        .action-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .loading-btn {
+            position: relative;
+            color: transparent !important;
+        }
+        .loading-btn:after {
+            content: '';
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            top: 50%;
+            left: 50%;
+            margin-left: -6px;
+            margin-top: -6px;
+            border: 2px solid #ffffff;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 1s linear infinite;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 20px;
+            border-radius: 8px;
+            width: 80%;
+            max-width: 800px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .close {
+            color: #aaa;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .close:hover {
+            color: black;
+        }
+        .logs-content {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            font-size: 0.9em;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Argentquest Development Suite - System Status</h1>
+        
+        <div class="nav-bar">
+            <a href="index.html" class="nav-link">Dashboard</a>
+            <a href="status.html" class="nav-link active">System Status</a>
+            <a href="about.html" class="nav-link">About</a>
+            <a href="#" class="nav-link" onclick="refreshData()">Refresh</a>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-title">🐳 Total Containers</div>
+                <div class="metric-value" id="totalContainers">-</div>
+                <div class="metric-label">Running / Total</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-title">💾 Memory Usage</div>
+                <div class="metric-value" id="totalMemory">-</div>
+                <div class="metric-label">MB Total Used</div>
+                <div class="progress-bar" style="margin-top: 10px;">
+                    <div class="progress-fill progress-medium" id="memoryProgress" style="width: 0%"></div>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-title">⚡ CPU Usage</div>
+                <div class="metric-value" id="totalCpu">-</div>
+                <div class="metric-label">% Average</div>
+                <div class="progress-bar" style="margin-top: 10px;">
+                    <div class="progress-fill progress-low" id="cpuProgress" style="width: 0%"></div>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-title">🔄 Uptime</div>
+                <div class="metric-value" id="avgUptime">-</div>
+                <div class="metric-label">Average Container Uptime</div>
+            </div>
+        </div>
+
+        <div class="containers-table">
+            <div class="table-header">
+                <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr 1fr; gap: 15px;">
+                    <div>Container Name</div>
+                    <div>Status</div>
+                    <div>CPU %</div>
+                    <div>Memory</div>
+                    <div>Network I/O</div>
+                    <div>Uptime</div>
+                    <div>Actions</div>
+                </div>
+            </div>
+            <div id="containersData">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    Loading container data...
+                </div>
+            </div>
+        </div>
+
+        <div class="refresh-info">
+            <p>⏱️ Last updated: <span id="lastUpdated">-</span> | Auto-refresh every 30 seconds</p>
+            <p>💡 Use action buttons to control containers</p>
+        </div>
+    </div>
+
+    <!-- Logs Modal -->
+    <div id="logsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Container Logs: <span id="logsContainerName">-</span></h3>
+                <span class="close">&times;</span>
+            </div>
+            <div class="logs-content" id="logsContent">Loading...</div>
+        </div>
+    </div>
+
+    <script>
+        let refreshInterval;
+        
+        async function fetchContainerStats() {
+            try {
+                // Since we can't directly access Docker stats from the browser,
+                // we'll simulate the data structure and provide a way to get real data
+                
+                // Try to get real data from our Docker stats API
+                // Use relative URL to work through NPM proxy
+                const apiUrl = window.location.hostname === 'localhost' ? 
+                    'http://localhost:8083/api/container-stats' : 
+                    `http://${window.location.hostname}:8083/api/container-stats`;
+                
+                const response = await fetch(apiUrl).catch(() => {
+                    // Fallback to mock data when API isn't available
+                    return {
+                        ok: false,
+                        json: () => getMockData()
+                    };
+                });
+                
+                let data;
+                if (response.ok) {
+                    data = await response.json();
+                } else {
+                    data = getMockData();
+                    document.getElementById('containersData').innerHTML = 
+                        '<div class="error-message">⚠️ Unable to connect to Docker stats API. Showing sample data structure.</div>' +
+                        document.getElementById('containersData').innerHTML;
+                }
+                
+                updateDisplay(data);
+                document.getElementById('lastUpdated').textContent = new Date().toLocaleTimeString();
+                
+            } catch (error) {
+                console.error('Error fetching container stats:', error);
+                document.getElementById('containersData').innerHTML = 
+                    '<div class="error-message">❌ Error loading container data: ' + error.message + '</div>';
+            }
+        }
+        
+        function getContainerDescription(containerName) {
+            const descriptions = {
+                'npm': 'Nginx Proxy Manager - Routes all traffic, SSL termination',
+                'app-prod': 'FastAPI Production - Main application API server',
+                'app-dev': 'FastAPI Development - Hot-reload development server',
+                'postgres': 'PostgreSQL Database - Main data store with pgvector',
+                'mongodb': 'MongoDB - NoSQL document database',
+                'redis': 'Redis Cache - In-memory data store for performance',
+                'minio': 'MinIO Object Storage - S3-compatible file storage',
+                'portainer': 'Portainer - Docker container management UI',
+                'pgadmin': 'pgAdmin - PostgreSQL database administration',
+                'mongo-express': 'MongoDB Express - MongoDB web administration',
+                'redis-commander': 'Redis Commander - Redis cache management',
+                'heimdall': 'Heimdall Dashboard - Application launcher',
+                'vscode': 'VS Code Server - Browser-based IDE',
+                'mcp-inspector': 'MCP Inspector - Model Context Protocol testing',
+                'n8n': 'n8n Workflow Automation - Visual workflow builder',
+                'jupyter': 'Jupyter Lab - Data science and machine learning notebooks',
+                'system-monitor': 'System Monitor - Static file server for dashboard',
+                'monitor-api': 'Monitor API - Backend for container control'
+            };
+            
+            const serviceName = containerName.replace('aq-devsuite-', '');
+            return descriptions[serviceName] || 'Container service';
+        }
+
+        function getMockData() {
+            // All 14 V2 POC containers with realistic resource usage
+            return {
+                containers: [
+                    {
+                        name: "aq-devsuite-npm",
+                        status: "running",
+                        health: "healthy",
+                        cpu_percent: Math.random() * 3 + 1,
+                        memory_mb: Math.random() * 40 + 80,
+                        memory_limit_mb: 256,
+                        network_rx_mb: Math.random() * 2,
+                        network_tx_mb: Math.random() * 1,
+                        uptime: "2h 45m"
+                    },
+                    {
+                        name: "aq-devsuite-app-prod",
+                        status: "running",
+                        health: "healthy",
+                        cpu_percent: Math.random() * 15 + 8,
+                        memory_mb: Math.random() * 150 + 350,
+                        memory_limit_mb: 1024,
+                        network_rx_mb: Math.random() * 10,
+                        network_tx_mb: Math.random() * 8,
+                        uptime: "2h 45m"
+                    },
+                    {
+                        name: "aq-devsuite-app-dev",
+                        status: "running",
+                        health: "healthy",
+                        cpu_percent: Math.random() * 12 + 5,
+                        memory_mb: Math.random() * 120 + 280,
+                        memory_limit_mb: 1024,
+                        network_rx_mb: Math.random() * 8,
+                        network_tx_mb: Math.random() * 6,
+                        uptime: "2h 45m"
+                    },
+                    {
+                        name: "aq-devsuite-postgres",
+                        status: "running", 
+                        health: "healthy",
+                        cpu_percent: Math.random() * 8 + 3,
+                        memory_mb: Math.random() * 100 + 200,
+                        memory_limit_mb: 1024,
+                        network_rx_mb: Math.random() * 5,
+                        network_tx_mb: Math.random() * 4,
+                        uptime: "2h 45m"
+                    },
+                    {
+                        name: "aq-devsuite-mongodb",
+                        status: "running",
+                        health: "healthy",
+                        cpu_percent: Math.random() * 6 + 2,
+                        memory_mb: Math.random() * 80 + 150,
+                        memory_limit_mb: 512,
+                        network_rx_mb: Math.random() * 3,
+                        network_tx_mb: Math.random() * 2,
+                        uptime: "2h 45m"
+                    },
+                    {
+                        name: "aq-devsuite-redis",
+                        status: "running",
+                        health: "healthy", 
+                        cpu_percent: Math.random() * 3 + 1,
+                        memory_mb: Math.random() * 50 + 60,
+                        memory_limit_mb: 256,
+                        network_rx_mb: Math.random() * 2,
+                        network_tx_mb: Math.random() * 1,
+                        uptime: "2h 45m"
+                    },
+                    {
+                        name: "aq-devsuite-minio",
+                        status: "running",
+                        health: "healthy",
+                        cpu_percent: Math.random() * 5 + 2,
+                        memory_mb: Math.random() * 80 + 100,
+                        memory_limit_mb: 512,
+                        network_rx_mb: Math.random() * 4,
+                        network_tx_mb: Math.random() * 3,
+                        uptime: "2h 45m"
+                    },
+                    {
+                        name: "aq-devsuite-portainer",
+                        status: "running",
+                        health: "healthy",
+                        cpu_percent: Math.random() * 4 + 1,
+                        memory_mb: Math.random() * 60 + 80,
+                        memory_limit_mb: 256,
+                        network_rx_mb: Math.random() * 2,
+                        network_tx_mb: Math.random() * 1,
+                        uptime: "2h 45m"
+                    },
+                    {
+                        name: "aq-devsuite-pgadmin",
+                        status: "running",
+                        health: "healthy",
+                        cpu_percent: Math.random() * 4 + 1,
+                        memory_mb: Math.random() * 80 + 100,
+                        memory_limit_mb: 512,
+                        network_rx_mb: Math.random() * 2,
+                        network_tx_mb: Math.random() * 1,
+                        uptime: "2h 45m"
+                    },
+                    {
+                        name: "aq-devsuite-mongo-express",
+                        status: "running",
+                        health: "healthy",
+                        cpu_percent: Math.random() * 3 + 1,
+                        memory_mb: Math.random() * 40 + 60,
+                        memory_limit_mb: 256,
+                        network_rx_mb: Math.random() * 1,
+                        network_tx_mb: Math.random() * 0.5,
+                        uptime: "2h 45m"
+                    },
+                    {
+                        name: "aq-devsuite-redis-commander",
+                        status: "running",
+                        health: "healthy",
+                        cpu_percent: Math.random() * 2 + 0.5,
+                        memory_mb: Math.random() * 30 + 40,
+                        memory_limit_mb: 128,
+                        network_rx_mb: Math.random() * 0.5,
+                        network_tx_mb: Math.random() * 0.3,
+                        uptime: "2h 45m"
+                    },
+                    {
+                        name: "aq-devsuite-heimdall",
+                        status: "running",
+                        health: "healthy",
+                        cpu_percent: Math.random() * 3 + 1,
+                        memory_mb: Math.random() * 50 + 70,
+                        memory_limit_mb: 256,
+                        network_rx_mb: Math.random() * 1,
+                        network_tx_mb: Math.random() * 0.5,
+                        uptime: "2h 45m"
+                    },
+                    {
+                        name: "aq-devsuite-vscode",
+                        status: "running",
+                        health: "healthy",
+                        cpu_percent: Math.random() * 8 + 2,
+                        memory_mb: Math.random() * 100 + 200,
+                        memory_limit_mb: 1024,
+                        network_rx_mb: Math.random() * 3,
+                        network_tx_mb: Math.random() * 2,
+                        uptime: "2h 45m"
+                    },
+                    {
+                        name: "aq-devsuite-mcp-inspector",
+                        status: "running",
+                        health: "healthy",
+                        cpu_percent: Math.random() * 6 + 2,
+                        memory_mb: Math.random() * 80 + 120,
+                        memory_limit_mb: 512,
+                        network_rx_mb: Math.random() * 2,
+                        network_tx_mb: Math.random() * 1,
+                        uptime: "2h 45m"
+                    },
+                    {
+                        name: "aq-devsuite-system-monitor",
+                        status: "running",
+                        health: "healthy",
+                        cpu_percent: Math.random() * 1 + 0.2,
+                        memory_mb: Math.random() * 15 + 20,
+                        memory_limit_mb: 64,
+                        network_rx_mb: Math.random() * 0.3,
+                        network_tx_mb: Math.random() * 0.2,
+                        uptime: "2h 45m"
+                    },
+                    {
+                        name: "aq-devsuite-monitor-api",
+                        status: "running",
+                        health: "healthy",
+                        cpu_percent: Math.random() * 2 + 0.5,
+                        memory_mb: Math.random() * 25 + 35,
+                        memory_limit_mb: 128,
+                        network_rx_mb: Math.random() * 0.5,
+                        network_tx_mb: Math.random() * 0.3,
+                        uptime: "2h 45m"
+                    }
+                ]
+            };
+        }
+        
+        function updateDisplay(data) {
+            const containers = data.containers.sort((a, b) => a.name.localeCompare(b.name));
+            const runningCount = containers.filter(c => c.status === 'running').length;
+            const totalMemory = containers.reduce((sum, c) => sum + c.memory_mb, 0);
+            const avgCpu = containers.reduce((sum, c) => sum + c.cpu_percent, 0) / containers.length;
+            
+            // Update summary stats
+            document.getElementById('totalContainers').textContent = `${runningCount} / ${containers.length}`;
+            document.getElementById('totalMemory').textContent = Math.round(totalMemory);
+            document.getElementById('totalCpu').textContent = avgCpu.toFixed(1) + '%';
+            document.getElementById('avgUptime').textContent = containers[0]?.uptime || '-';
+            
+            // Update progress bars
+            document.getElementById('memoryProgress').style.width = Math.min((totalMemory / 2000) * 100, 100) + '%';
+            document.getElementById('cpuProgress').style.width = Math.min(avgCpu * 2, 100) + '%';
+            
+            // Update CPU progress color
+            const cpuFill = document.getElementById('cpuProgress');
+            cpuFill.className = 'progress-fill ' + (avgCpu > 70 ? 'progress-high' : avgCpu > 30 ? 'progress-medium' : 'progress-low');
+            
+            // Update containers table
+            const containersHtml = containers.map(container => {
+                const memoryPercent = ((container.memory_mb / container.memory_limit_mb) * 100).toFixed(1);
+                const statusClass = container.status === 'running' ? 'status-running' : 'status-stopped';
+                const healthClass = container.health === 'healthy' ? 'status-healthy' : (container.health === 'stopped' ? 'status-stopped' : 'status-stopped');
+                const serviceName = container.service || container.name.replace('aq-devsuite-', '');
+                
+                return `
+                    <div class="container-row">
+                        <div>
+                            <div style="font-weight: 500;">${container.name.replace('aq-devsuite-', '')}</div>
+                            <div style="font-size: 0.8em; color: #666; margin-top: 2px;">${getContainerDescription(container.name)}</div>
+                        </div>
+                        <div>
+                            <span class="${statusClass} status-badge">${container.status}</span>
+                            <span class="${healthClass} status-badge" style="margin-left: 5px;">${container.health}</span>
+                        </div>
+                        <div>${container.cpu_percent.toFixed(1)}%</div>
+                        <div>
+                            ${Math.round(container.memory_mb)}MB
+                            <div style="font-size: 0.8em; color: #666;">(${memoryPercent}%)</div>
+                        </div>
+                        <div>
+                            ↓${container.network_rx_mb.toFixed(1)}MB
+                            <div style="font-size: 0.8em; color: #666;">↑${container.network_tx_mb.toFixed(1)}MB</div>
+                        </div>
+                        <div>${container.uptime}</div>
+                        <div class="action-buttons">
+                            ${container.status === 'running' ? 
+                                `<button class="action-btn stop" onclick="stopContainer('${serviceName}')">Stop</button>` : 
+                                `<button class="action-btn restart" onclick="startContainer('${serviceName}')">Start</button>`
+                            }
+                            <button class="action-btn restart" onclick="restartContainer('${serviceName}')">Restart</button>
+                            <button class="action-btn logs" onclick="showLogs('${serviceName}')">Logs</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            document.getElementById('containersData').innerHTML = containersHtml;
+        }
+        
+        function refreshData() {
+            document.getElementById('containersData').innerHTML = 
+                '<div class="loading"><div class="spinner"></div>Refreshing data...</div>';
+            fetchContainerStats();
+        }
+        
+        // Initial load
+        fetchContainerStats();
+        
+        // Auto-refresh every 30 seconds
+        refreshInterval = setInterval(fetchContainerStats, 30000);
+        
+        // Container control functions
+        async function stopContainer(serviceName) {
+            await performContainerAction(serviceName, 'stop', 'Stopping container...');
+        }
+        
+        async function startContainer(serviceName) {
+            // Docker Compose uses 'up' to start stopped containers
+            await performContainerAction(serviceName, 'up', 'Starting container...');
+        }
+        
+        async function restartContainer(serviceName) {
+            await performContainerAction(serviceName, 'restart', 'Restarting container...');
+        }
+        
+        async function performContainerAction(serviceName, action, loadingText) {
+            const button = event.target;
+            const originalText = button.textContent;
+            
+            // Show loading state
+            button.textContent = loadingText;
+            button.disabled = true;
+            button.classList.add('loading-btn');
+            
+            try {
+                const baseUrl = window.location.hostname === 'localhost' ? 
+                    'http://localhost:8083' : 
+                    `http://${window.location.hostname}:8083`;
+                
+                const endpoint = action === 'up' ? 
+                    `${baseUrl}/api/container/${serviceName}/restart` :
+                    `${baseUrl}/api/container/${serviceName}/${action}`;
+                
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Show success message briefly
+                    button.textContent = 'Success!';
+                    button.style.background = '#28a745';
+                    
+                    // Refresh data after a short delay
+                    setTimeout(() => {
+                        fetchContainerStats();
+                    }, 1000);
+                } else {
+                    // Show error
+                    button.textContent = 'Error';
+                    button.style.background = '#dc3545';
+                    alert(`Failed to ${action} container: ${result.error}`);
+                }
+            } catch (error) {
+                console.error(`Error ${action}ing container:`, error);
+                button.textContent = 'Error';
+                button.style.background = '#dc3545';
+                alert(`Error ${action}ing container: ${error.message}`);
+            } finally {
+                // Reset button after 2 seconds
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.disabled = false;
+                    button.classList.remove('loading-btn');
+                    button.style.background = ''; // Reset to CSS default
+                }, 2000);
+            }
+        }
+        
+        async function showLogs(serviceName) {
+            const modal = document.getElementById('logsModal');
+            const containerNameSpan = document.getElementById('logsContainerName');
+            const logsContent = document.getElementById('logsContent');
+            
+            // Show modal and loading state
+            modal.style.display = 'block';
+            containerNameSpan.textContent = serviceName;
+            logsContent.textContent = 'Loading logs...';
+            
+            try {
+                const baseUrl = window.location.hostname === 'localhost' ? 
+                    'http://localhost:8083' : 
+                    `http://${window.location.hostname}:8083`;
+                
+                const response = await fetch(`${baseUrl}/api/container/${serviceName}/logs`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    logsContent.textContent = result.logs || 'No logs available';
+                } else {
+                    logsContent.textContent = `Error loading logs: ${result.error}`;
+                }
+            } catch (error) {
+                console.error('Error loading logs:', error);
+                logsContent.textContent = `Error loading logs: ${error.message}`;
+            }
+        }
+        
+        // Modal close functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const modal = document.getElementById('logsModal');
+            const closeBtn = modal.querySelector('.close');
+            
+            closeBtn.onclick = function() {
+                modal.style.display = 'none';
+            }
+            
+            window.onclick = function(event) {
+                if (event.target === modal) {
+                    modal.style.display = 'none';
+                }
+            }
+        });
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+            }
+        });
+    </script>
+</body>
+</html>
