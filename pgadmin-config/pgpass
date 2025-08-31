@@ -1,0 +1,10 @@
+# pgAdmin password file for PostgreSQL
+# Format: hostname:port:database:username:password
+
+# Main PostgreSQL Database
+postgres:5432:poc_db:pocuser:pocpass
+postgres:5432:*:pocuser:pocpass
+
+# Add additional connections here manually:
+# Example: localhost:5432:*:pocuser:pocpass
+# Example: remote-host:5432:*:username:password

@@ -2,7 +2,8 @@
 
 ## 🚀 Overview
 
-A comprehensive, self-hosted development environment with **20 containerized services** including dual FastAPI environments, multiple databases (PostgreSQL+pgvector, MongoDB), management tools (Portainer, Heimdall), development tools (VS Code Server, MCP Inspector), workflow automation (n8n), and simplified single-network architecture. This stack provides enterprise-grade functionality with 90% cost savings compared to cloud services.
+
+A comprehensive, self-hosted development environment with **22 containerized services** including dual FastAPI environments, multiple databases (PostgreSQL+pgvector, MongoDB), management tools (Portainer, Heimdall), development tools (VS Code Server, MCP Inspector), workflow automation (n8n), and simplified single-network architecture. This stack provides enterprise-grade functionality with 90% cost savings compared to cloud services.
 
 ## 📋 Table of Contents
 
@@ -24,7 +25,7 @@ A comprehensive, self-hosted development environment with **20 containerized ser
 
 ## 🏗️ Architecture
 
-### Argentquest Development Suite Architecture (20 Services)
+### Argentquest Development Suite Architecture (22 Services)
 
 ```
                     INTERNET
@@ -37,23 +38,23 @@ A comprehensive, self-hosted development environment with **20 containerized ser
               ┌─────────▼─────────┐
               │ aq-devsuite-network │ (Single Docker Bridge Network)
               │   172.18.0.0/16   │
-              └─┬─┬─┬─┬─┬─┬─┬─┬─┬─┘
-                │ │ │ │ │ │ │ │ │
-        ┌───────┴─┴─┴─┴─┴─┴─┴─┴─┴───────┐
-        │                               │
-    [Frontend]  [API]  [Data]  [Management]  [Development]
-        │        │      │         │            │
-    Heimdall  FastAPI  PostgreSQL Portainer  VS Code
-    Monitor   (x2)     MongoDB    pgAdmin    MCP Inspector
-              System   Redis      Mongo Expr
-                       MinIO      Redis Cmdr
+              └─┬─┬─┬─┬─┬─┬─┬─┬─┬─┬─┬─┬─┬─┬─┬─┬─┬─┬─┬─┬─┬─┐
+                │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │ │
+        ┌───────┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴─┴───────┐
+        │                                                          │
+    [Frontend]  [API]  [Data]  [Management]  [Development] [Monitoring]
+        │        │      │         │            │              │
+    Heimdall  FastAPI  PostgreSQL Portainer  VS Code         Beszel
+              (x2)     MongoDB    pgAdmin    MCP Inspector    System Monitor
+                       Redis      Mongo Expr n8n              Monitor API
+                       MinIO      Redis Cmdr Jupyter
 ```
 
 ### Technology Stack Comparison
 
 | Component | Current (Azure) | V2 (Docker) | Cost Savings |
-|-----------|----------------|-------------| -------------|
-| **Hosting** | Azure App Service | VPS + Docker (14 containers) | 95% |
+|-----------|----------------|-------------| ------------|
+| **Hosting** | Azure App Service | VPS + Docker (22 containers) | 95% |
 | **Vector Search** | Azure AI Search | PostgreSQL + pgvector | 100% |
 | **Document DB** | Azure Cosmos DB | MongoDB 7.0 | 100% |
 | **LLM Provider** | Azure OpenAI | OpenRouter (GPT-5 Nano) | 95% |
@@ -66,11 +67,14 @@ A comprehensive, self-hosted development environment with **20 containerized ser
 
 ## 🚀 Quick Start
 
-## 🖥️ Fresh Ubuntu 24 Server Deployment
+### 🖥️ Local & Server Deployment Guide
 
-### Complete deployment steps from a brand new Ubuntu 24.04 LTS server:
+These steps cover both local development and deployment on a fresh Ubuntu 24.04 LTS server.
 
-#### 1. Initial Server Setup
+#### 1. Initial Server Setup (Skip for Local Development)
+
+If you are deploying to a remote server, follow these steps first.
+
 ```bash
 # Update system packages
 sudo apt update && sudo apt upgrade -y
@@ -119,37 +123,65 @@ OPENROUTER_API_KEY="your-openrouter-api-key-here"
 OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
 DEFAULT_MODEL=openai/gpt-5-nano
 
-# Database Configuration
+# Database Configuration (Docker Network)
 POSTGRES_USER=pocuser
 POSTGRES_PASSWORD=pocpass
 POSTGRES_DB=poc_db
+DATABASE_URL=postgresql://pocuser:pocpass@postgres:5432/poc_db
+
 MONGO_INITDB_ROOT_USERNAME=mongoadmin
 MONGO_INITDB_ROOT_PASSWORD=mongopass123
-MINIO_ROOT_USER=minioadmin
-MINIO_ROOT_PASSWORD=minioadmin123
-VSCODE_PASSWORD=changeme
+MONGODB_URL=mongodb://mongoadmin:mongopass123@mongodb:27017/poc_mongo_db
+
+# Storage and Caching
+REDIS_URL=redis://redis:6379
+MINIO_ENDPOINT=minio:9000
+MINIO_ACCESS_KEY=minioadmin
+MINIO_SECRET_KEY=minioadmin123
+
+# Development Tools
+VSCODE_PASSWORD=dev123
+PGADMIN_DEFAULT_PASSWORD=admin
 ```
 
-#### 4. Deploy the Full Stack
-```bash
-# Start all 16 containers
-docker-compose up -d
+### 🔧 Environment File Configuration
 
-# Wait for containers to initialize (2-3 minutes)
-sleep 180
+The stack uses **three environment files** for different purposes:
 
-# Run automated NPM proxy host setup
-python scripts/npm-simple-setup.py
+#### **`.env` (Main Configuration)**
+- **Purpose:** Local development and shared configuration
+- **Database Targets:** Docker container names (`postgres:5432`, `mongodb:27017`)
+- **Usage:** Local development apps, testing, and configuration base
 
-# Verify deployment
-python health-check.py
-```
+#### **`.env.dev` (Development Container)**
+- **Purpose:** Configuration for `app-dev` container
+- **Features:** Debug logging, hot reload, relaxed security, single worker
+- **Database Targets:** Same Docker containers (`postgres:5432`, `mongodb:27017`)
 
-#### 5. Configure Domain Access
+#### **`.env.prod` (Production Container)**
+- **Purpose:** Configuration for `app-prod` container  
+- **Features:** JSON logging, multiple workers, strict security, performance optimized
+- **Database Targets:** Same Docker containers (`postgres:5432`, `mongodb:27017`)
+
+#### **Key Benefits:**
+- **Shared Database:** All environments connect to same PostgreSQL and MongoDB instances with test data
+- **Environment Isolation:** Different logging, security, and performance settings per environment
+- **Consistency:** All environments use Docker network names for reliable container communication
+- **Flexibility:** Easy to customize each environment without affecting others
+
+**Connection Summary:**
+| Environment | File | Database Host | Purpose |
+|-------------|------|---------------|---------|
+| Local Development | `.env` | `postgres/mongodb` | Development apps |
+| Dev Container | `.env.dev` | `postgres/mongodb` | Debug environment |
+| Prod Container | `.env.prod` | `postgres/mongodb` | Production-like testing |
+| External Tools | Host machine | `localhost:5432/27017` | pgAdmin, clients |
+
+#### 4. Configure Domain Access
 
 **REQUIRED: Update Your Hosts File**
 
-The stack uses `pocmaster.argentquest.com` domains. You must add these to your hosts file pointing to your server's IP address.
+baseThe stack uses `pocmaster.argentquest.com` domains. You must add these to your hosts file pointing to your server\'s IP address.
 
 **Windows (Run as Administrator):**
 ```cmd
@@ -161,7 +193,7 @@ notepad C:\Windows\System32\drivers\etc\hosts
 sudo nano /etc/hosts
 ```
 
-**Add these lines (replace SERVER_IP with your Ubuntu server's IP address):**
+**Add these lines (replace SERVER_IP with `127.0.0.1` for local development or your server\'s IP):**
 ```
 # Argentquest Development Suite
 SERVER_IP    pocmaster.argentquest.com
@@ -179,28 +211,19 @@ SERVER_IP    n8n.pocmaster.argentquest.com
 SERVER_IP    jupyter.pocmaster.argentquest.com
 ```
 
-**Examples:**
-- For local deployment: Use `127.0.0.1` as SERVER_IP
-- For remote server: Use your server's public IP (e.g., `192.168.1.100` or `45.123.45.67`)
-
-**Option B: Real Domain (Production)**
+#### 5. Deploy the Full Stack
 ```bash
-# Point your domain's DNS A records to your server IP:
-# pocmaster.argentquest.com -> SERVER_IP
-# *.pocmaster.argentquest.com -> SERVER_IP
+# Start all 22 containers
+docker-compose up -d
 
-# Then configure SSL certificates
-python scripts/npm-ssl-setup.py
-```
+# Wait for containers to initialize (2-3 minutes)
+sleep 180
 
-**Option B: Real Domain (Production)**
-```bash
-# Point your domain's DNS A records to your server IP:
-# pocmaster.argentquest.com -> SERVER_IP
-# *.pocmaster.argentquest.com -> SERVER_IP
+# Run automated NPM proxy host setup
+python scripts/npm-simple-setup.py
 
-# Then configure SSL certificates
-python scripts/npm-ssl-setup.py
+# Verify deployment
+python health-check.py
 ```
 
 #### 6. Verify Complete Deployment
@@ -209,7 +232,7 @@ python scripts/npm-ssl-setup.py
 docker ps --filter "name=aq-devsuite-" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
 
 # Test health endpoint
-curl -f http://SERVER_IP/health || echo "Setup NPM proxy hosts first"
+curl -f http://localhost/health || echo "Setup NPM proxy hosts first"
 
 # Access main dashboard
 # http://pocmaster.argentquest.com (after hosts file or DNS setup)
@@ -231,23 +254,26 @@ sudo ufw --force enable
 ```
 
 #### 8. First-Time Access
-1. **NPM Admin:** http://SERVER_IP:81 (admin@example.com / changeme)
+1. **NPM Admin:** http://localhost:81 (admin@example.com / changeme)
 2. **Main Dashboard:** http://pocmaster.argentquest.com (after proxy setup)
 3. **Change default passwords** in NPM Admin, pgAdmin, and other services
 
 #### 9. Validation Checklist
-- [ ] All 16 containers running (`docker ps`)
+- [ ] All 22 containers running (`docker ps`)
 - [ ] NPM proxy hosts configured (12 hosts in NPM admin)
 - [ ] Health check shows 100% healthy services
 - [ ] Main dashboard accessible via domain
 - [ ] API documentation loads at `/docs` endpoint
-- [ ] Database connections working (test via admin UIs)
+- [ ] Database connections working (test via admin UIs) 
+
 
 **Estimated deployment time:** 15-20 minutes on a fresh Ubuntu 24 server
 
 ## 🏠 Using Custom Domains (Alternative to pocmaster.argentquest.com)
 
 ### If you want to use your own domain instead of `pocmaster.argentquest.com`:
+
+> **IMPORTANT**: Using a custom domain requires changes to several files. This section outlines the necessary modifications. Failure to update these files will result in a non-functional deployment.
 
 #### 1. Choose Your Domain
 Examples:
@@ -283,7 +309,7 @@ nano mcp-inspector/Dockerfile
 ```
 Line 29: Add your domain to allowedHosts:
 ```javascript
-allowedHosts: ['mcp.pocmaster.argentquest.com', 'mcp.YOURDOMAIN.com', 'localhost', '127.0.0.1']
+allowedHosts: ["mcp.pocmaster.argentquest.com", "mcp.YOURDOMAIN.com", "localhost", "127.0.0.1"]
 ```
 
 #### 3. Update Your Hosts File
@@ -292,7 +318,7 @@ allowedHosts: ['mcp.pocmaster.argentquest.com', 'mcp.YOURDOMAIN.com', 'localhost
 
 Add your domain mappings:
 ```
-# Replace SERVER_IP with your server's IP address
+# Replace SERVER_IP with your server\'s IP address
 SERVER_IP    yourdomain.com
 SERVER_IP    api.yourdomain.com
 SERVER_IP    api-dev.yourdomain.com
@@ -356,12 +382,12 @@ docker-compose restart beszel-agent
 In Beszel dashboard:
 1. Edit your system settings
 2. Enable **"Docker Monitoring"**
-3. Beszel will automatically discover all 20 containers
+3. Beszel will automatically discover all 22 containers
 4. View real-time metrics for each container
 
-#### 5. What You'll See
+#### 5. What You\'ll See
 - **Host metrics:** CPU, RAM, disk, network usage
-- **Container metrics:** Per-container resource usage for all 20 services
+- **Container metrics:** Per-container resource usage for all 22 services
 - **Historical data:** Resource usage over time
 - **Alerts:** Configure thresholds for resource monitoring
 
@@ -378,77 +404,6 @@ In Beszel dashboard:
 - **8GB RAM** minimum (16GB recommended)
 - **20GB disk space** for containers and data
 - **OpenRouter API key** with credits
-
-### 1. Local Development Setup (Hosts File)
-
-**Windows** (Run as Administrator):
-```cmd
-notepad C:\Windows\System32\drivers\etc\hosts
-```
-
-**Linux/Mac**:
-```bash
-sudo nano /etc/hosts
-```
-
-**Add these lines:**
-```
-127.0.0.1    pocmaster.argentquest.com
-127.0.0.1    portainer.pocmaster.argentquest.com
-127.0.0.1    pgadmin.pocmaster.argentquest.com
-127.0.0.1    mongo.pocmaster.argentquest.com
-127.0.0.1    redis.pocmaster.argentquest.com
-127.0.0.1    minio.pocmaster.argentquest.com
-127.0.0.1    code.pocmaster.argentquest.com
-127.0.0.1    mcp.pocmaster.argentquest.com
-127.0.0.1    api-dev.pocmaster.argentquest.com
-127.0.0.1    api.pocmaster.argentquest.com
-127.0.0.1    heimdall.pocmaster.argentquest.com
-```
-
-### 2. Environment Configuration
-
-Create `.env` file:
-```env
-# OpenRouter Configuration
-OPENROUTER_API_KEY="your-api-key-here"
-OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
-DEFAULT_MODEL=openai/gpt-5-nano
-
-# Database Configuration
-POSTGRES_USER=pocuser
-POSTGRES_PASSWORD=pocpass
-POSTGRES_DB=poc_db
-
-# MongoDB Configuration  
-MONGO_INITDB_ROOT_USERNAME=mongoadmin
-MONGO_INITDB_ROOT_PASSWORD=mongopass123
-
-# MinIO Configuration
-MINIO_ROOT_USER=minioadmin
-MINIO_ROOT_PASSWORD=minioadmin123
-
-# VS Code Server
-VSCODE_PASSWORD=changeme
-```
-
-### 3. Start All Services
-
-```bash
-# Start all 14 containers
-docker-compose up -d
-
-# Check health status
-python health-check.py
-
-# View container status
-docker-compose ps
-```
-
-### 4. Verify Installation
-
-**Main Dashboard:** http://pocmaster.argentquest.com
-**Health Check:** All 14 services should show healthy (100%)
 
 ## 📊 Service Directory
 
@@ -506,6 +461,10 @@ docker-compose ps
 
 ## 🛠️ Development Guide
 
+### Virtual Machine Setup
+
+For detailed instructions on how to set up VirtualBox and create a new virtual machine, please refer to the [VirtualBox.md](VirtualBox.md) file.
+
 ### Dual FastAPI Environment
 
 This stack provides two FastAPI instances for flexible development:
@@ -537,7 +496,6 @@ source .venv/bin/activate  # Linux/Mac
 
 # Install dependencies
 pip install uv
-uv pip install -e .
 ```
 
 ## 🔐 Credentials Reference
@@ -557,6 +515,8 @@ uv pip install -e .
 | **Portainer** | - | - | ⚠️ First-time setup required |
 
 ### Database Connections
+
+#### **For External Tools (Host Machine Access)**
 
 **PostgreSQL:**
 ```
@@ -584,6 +544,35 @@ Password: (none)
 Connection String: redis://localhost:6379
 ```
 
+#### **For Docker Applications (Internal Network)**
+
+**PostgreSQL:**
+```
+Host: postgres:5432
+Database: poc_db
+Username: pocuser
+Password: pocpass
+Connection String: postgresql://pocuser:pocpass@postgres:5432/poc_db
+```
+
+**MongoDB:**
+```
+Host: mongodb:27017
+Database: poc_mongo_db
+Username: mongoadmin
+Password: mongopass123
+Connection String: mongodb://mongoadmin:mongopass123@mongodb:27017/poc_mongo_db
+```
+
+**Redis:**
+```
+Host: redis:6379
+Database: 0
+Connection String: redis://redis:6379
+```
+
+**Note:** All three environment files (`.env`, `.env.dev`, `.env.prod`) use Docker container names for reliable internal network communication. External database clients should use localhost connections.
+
 ### Test Data & User Profiles
 
 **PostgreSQL Test Users:**
@@ -596,7 +585,7 @@ Connection String: redis://localhost:6379
 | writer2 | writer2@example.com | $2b$12$... | Story writer |
 
 **PostgreSQL Test Stories:**
-- "The Dragon's Quest" (fantasy, 245 words)
+- "The Dragon\'s Quest" (fantasy, 245 words)
 - "Cyber Shadows" (cyberpunk, 189 words) 
 - "The Time Merchant" (sci-fi, 312 words)
 - "Whispers in the Wind" (mystery, 167 words)
@@ -626,7 +615,13 @@ Connection String: redis://localhost:6379
 ```bash
 python health-check.py
 ```
-**Expected Result:** 14/14 services healthy (100.0%)
+**Expected Result:** 22/22 services healthy (100.0%)
+
+### Database Validation
+```bash
+./validate-database-setup.sh
+```
+**Purpose:** Validates PostgreSQL and MongoDB connections, test data integrity, and management tool access
 
 ### Comprehensive Test Suite
 ```bash
@@ -658,8 +653,9 @@ python tests/test_06_end_to_end.py
 - Ensure all containers are healthy
 
 **Database Connection Issues:**
-- Use service names (postgres, mongodb, redis) not IPs
-- Verify credentials match .env file
+- **Docker containers:** Use service names (`postgres`, `mongodb`, `redis`) - configured in all `.env` files
+- **External tools:** Use `localhost` ports (5432, 27017, 6379) from host machine
+- Verify credentials match environment files (`.env`, `.env.dev`, `.env.prod`)
 - Check container logs: `docker-compose logs <service-name>`
 
 ### Network Troubleshooting
@@ -696,7 +692,7 @@ To use your own domain instead of `pocmaster.argentquest.com`:
 
 For production with real domain:
 ```bash
-python npm-ssl-setup.py  # Configure Let's Encrypt
+python npm-ssl-setup.py  # Configure Let\'s Encrypt
 ```
 
 ### Monitoring Setup
@@ -708,7 +704,7 @@ python health-check.py  # Run periodically
 
 **Container Stats:**
 - **System Monitor:** http://pocmaster.argentquest.com
-- **Portainer:** http://portainer.pocmaster.argentquest.com
+- **Portainer:** http://portainer.pocmaster.com
 
 ## 🔧 Maintenance Commands
 
@@ -755,13 +751,13 @@ docker system prune -a
 
 ### Current Performance Metrics
 - **All Services Response Time:** 8-200ms
-- **Health Check Status:** 14/14 services healthy (100%)
+- **Health Check Status:** 22/22 services healthy (100%)
 - **Network Latency:** < 10ms (single network)
 - **Memory Usage:** ~6GB total (all containers)
 
 ### Monitoring Tools
 - **Real-time Stats:** http://pocmaster.argentquest.com
-- **Container Management:** http://portainer.pocmaster.argentquest.com  
+- **Container Management:** http://portainer.pocmaster.com  
 - **Health Monitoring:** `python health-check.py`
 
 ## 🗺️ Migration Benefits
@@ -780,7 +776,7 @@ docker system prune -a
 
 1. **POC Scope**: Proof-of-concept, not production-ready
 2. **Local Development**: Requires hosts file entries
-3. **SSL**: Let's Encrypt needs real domain for production
+3. **SSL**: Let\'s Encrypt needs real domain for production
 4. **Monitoring**: Basic health checks (add Grafana for production)
 5. **Backup**: Manual backup procedures (automate for production)
 
@@ -795,7 +791,7 @@ docker system prune -a
 
 ### Essential Commands
 ```bash
-docker-compose up -d          # Start all services (18 containers)
+docker-compose up -d          # Start all services (22 containers)
 bash scripts/setup-npm-hosts.sh  # Auto-configure NPM proxy hosts
 docker-compose ps             # Check status
 python health-check.py        # Verify health
@@ -822,10 +818,12 @@ aq-devsuite-beszel            # Beszel Monitoring Hub
 aq-devsuite-beszel-agent      # Beszel Monitoring Agent
 aq-devsuite-system-monitor    # System Stats Frontend
 aq-devsuite-monitor-api       # System Stats Backend
+aq-devsuite-npm-setup       # NPM Auto-Setup
+aq-devsuite-beszel-setup      # Beszel Auto-Setup
 ```
 
 ---
 
-**Status:** All 18 services healthy (100%) - Ready for development and testing  
+**Status:** All 22 services healthy (100%) - Ready for development and testing  
 **Version:** 2.1.0  
-**Last Updated:** August 30, 2025
+**Last Updated:** August 31, 2025

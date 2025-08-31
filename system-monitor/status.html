@@ -234,6 +234,40 @@
             border-top-color: transparent;
             animation: spin 1s linear infinite;
         }
+        .control-btn {
+            padding: 12px 24px;
+            margin: 0 10px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        .control-btn.stop-all {
+            background: linear-gradient(135deg, #dc3545, #c82333);
+            color: white;
+        }
+        .control-btn.stop-all:hover {
+            background: linear-gradient(135deg, #c82333, #bd2130);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(220,53,69,0.4);
+        }
+        .control-btn.start-all {
+            background: linear-gradient(135deg, #28a745, #218838);
+            color: white;
+        }
+        .control-btn.start-all:hover {
+            background: linear-gradient(135deg, #218838, #1e7e34);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(40,167,69,0.4);
+        }
+        .control-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
         .modal {
             display: none;
             position: fixed;
@@ -288,8 +322,21 @@
         <div class="nav-bar">
             <a href="index.html" class="nav-link">Dashboard</a>
             <a href="status.html" class="nav-link active">System Status</a>
+            <a href="database-credentials.html" class="nav-link">🔐 Database Credentials</a>
             <a href="about.html" class="nav-link">About</a>
             <a href="#" class="nav-link" onclick="refreshData()">Refresh</a>
+        </div>
+
+        <div class="control-buttons" style="text-align: center; margin-bottom: 30px;">
+            <button class="control-btn stop-all" onclick="stopAllContainers()" title="Stop all non-essential containers (keeps NPM, Dashboard, Portainer running)">
+                🛑 Stop Non-Essential Services
+            </button>
+            <button class="control-btn start-all" onclick="startAllContainers()" title="Start all Docker containers">
+                ▶️ Start All Services
+            </button>
+            <div style="margin-top: 10px; color: white; font-size: 0.85em; opacity: 0.8;">
+                💡 Essential services (NPM, Dashboard, Portainer) are always kept running for management access
+            </div>
         </div>
 
         <div class="stats-grid">
@@ -699,6 +746,116 @@
         
         async function restartContainer(serviceName) {
             await performContainerAction(serviceName, 'restart', 'Restarting container...');
+        }
+        
+        async function stopAllContainers() {
+            const button = document.querySelector('.control-btn.stop-all');
+            const originalText = button.textContent;
+            
+            const message = `Are you sure you want to STOP all non-essential containers?\n\n` +
+                          `This will stop most services but KEEP RUNNING:\n` +
+                          `• NPM (Nginx Proxy Manager) - for web access\n` +
+                          `• System Monitor - this dashboard\n` +
+                          `• Monitor API - dashboard backend\n` +
+                          `• Portainer - Docker management\n\n` +
+                          `You can restart everything with the "Start All" button.`;
+            
+            if (!confirm(message)) {
+                return;
+            }
+            
+            // Show loading state
+            button.textContent = 'Stopping all containers...';
+            button.disabled = true;
+            button.classList.add('loading-btn');
+            
+            try {
+                const baseUrl = window.location.hostname === 'localhost' ? 
+                    'http://localhost:8083' : 
+                    `http://${window.location.hostname}:8083`;
+                
+                const response = await fetch(`${baseUrl}/api/containers/stop-all`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    button.textContent = '✅ Stopped!';
+                    button.style.background = '#6c757d';
+                    
+                    // Show what was kept running
+                    if (result.kept_running) {
+                        console.log('Essential services kept running:', result.kept_running);
+                    }
+                    
+                    setTimeout(() => {
+                        fetchContainerStats();
+                    }, 2000);
+                } else {
+                    throw new Error(result.message || 'Failed to stop containers');
+                }
+            } catch (error) {
+                console.error('Error stopping all containers:', error);
+                button.textContent = '❌ Error!';
+                button.style.background = '#dc3545';
+            } finally {
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.disabled = false;
+                    button.classList.remove('loading-btn');
+                    button.style.background = '';
+                }, 3000);
+            }
+        }
+        
+        async function startAllContainers() {
+            const button = document.querySelector('.control-btn.start-all');
+            const originalText = button.textContent;
+            
+            // Show loading state
+            button.textContent = 'Starting all containers...';
+            button.disabled = true;
+            button.classList.add('loading-btn');
+            
+            try {
+                const baseUrl = window.location.hostname === 'localhost' ? 
+                    'http://localhost:8083' : 
+                    `http://${window.location.hostname}:8083`;
+                
+                const response = await fetch(`${baseUrl}/api/containers/start-all`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    button.textContent = '✅ All Started!';
+                    button.style.background = '#218838';
+                    setTimeout(() => {
+                        fetchContainerStats();
+                    }, 2000);
+                } else {
+                    throw new Error(result.message || 'Failed to start containers');
+                }
+            } catch (error) {
+                console.error('Error starting all containers:', error);
+                button.textContent = '❌ Error!';
+                button.style.background = '#dc3545';
+            } finally {
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.disabled = false;
+                    button.classList.remove('loading-btn');
+                    button.style.background = '';
+                }, 3000);
+            }
         }
         
         async function performContainerAction(serviceName, action, loadingText) {

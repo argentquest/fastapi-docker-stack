@@ -21,6 +21,8 @@ class DockerStatsHandler(BaseHTTPRequestHandler):
             self.handle_container_stats()
         elif parsed_path.path == '/api/system-info':
             self.handle_system_info()
+        elif parsed_path.path == '/health':
+            self.handle_health()
         elif parsed_path.path.startswith('/api/container/') and parsed_path.path.endswith('/logs'):
             self.handle_container_logs(parsed_path.path)
         else:
@@ -30,7 +32,11 @@ class DockerStatsHandler(BaseHTTPRequestHandler):
         """Handle POST requests for container control."""
         parsed_path = urlparse(self.path)
         
-        if parsed_path.path.startswith('/api/container/') and '/stop' in parsed_path.path:
+        if parsed_path.path == '/api/containers/stop-all':
+            self.handle_containers_stop_all()
+        elif parsed_path.path == '/api/containers/start-all':
+            self.handle_containers_start_all()
+        elif parsed_path.path.startswith('/api/container/') and '/stop' in parsed_path.path:
             self.handle_container_stop(parsed_path.path)
         elif parsed_path.path.startswith('/api/container/') and '/restart' in parsed_path.path:
             self.handle_container_restart(parsed_path.path)
@@ -159,6 +165,14 @@ class DockerStatsHandler(BaseHTTPRequestHandler):
         except Exception as e:
             self.send_json_response({'error': str(e)}, status_code=500)
     
+    def handle_health(self):
+        """Health check endpoint for Docker healthcheck."""
+        try:
+            # Simple health check - just return OK
+            self.send_json_response({'status': 'healthy', 'timestamp': time.time()})
+        except Exception as e:
+            self.send_json_response({'status': 'unhealthy', 'error': str(e)}, status_code=500)
+    
     def handle_container_stop(self, path):
         """Stop a specific container."""
         container_name = self.extract_container_name(path)
@@ -184,6 +198,141 @@ class DockerStatsHandler(BaseHTTPRequestHandler):
                     'success': False,
                     'error': f'Failed to stop container: {result.stderr}'
                 }, 500)
+                
+        except Exception as e:
+            self.send_json_response({'error': str(e)}, 500)
+    
+    def handle_containers_stop_all(self):
+        """Stop all containers except essential services."""
+        try:
+            # Define essential container names that should NOT be stopped
+            essential_containers = [
+                'aq-devsuite-npm',           # Nginx Proxy Manager - needed for web access
+                'aq-devsuite-system-monitor', # System monitor - this dashboard
+                'aq-devsuite-monitor-api',    # Monitor API - backend for dashboard
+                'aq-devsuite-portainer'       # Docker management interface
+            ]
+            
+            # Get list of all running containers with aq-devsuite prefix
+            ps_result = subprocess.run(
+                ['docker', 'ps', '--format', '{{.Names}}', '--filter', 'name=aq-devsuite-'],
+                capture_output=True, text=True, timeout=10
+            )
+            
+            if ps_result.returncode != 0:
+                self.send_json_response({
+                    'success': False,
+                    'error': f'Failed to list containers: {ps_result.stderr}'
+                }, 500)
+                return
+            
+            # Parse container names
+            all_containers = [name.strip() for name in ps_result.stdout.strip().split('\n') if name.strip()]
+            
+            # Filter out essential containers
+            containers_to_stop = [c for c in all_containers if c not in essential_containers]
+            
+            # Stop only non-essential containers
+            if containers_to_stop:
+                # Stop containers one by one (more reliable than batch)
+                stopped = []
+                failed = []
+                
+                for container in containers_to_stop:
+                    stop_result = subprocess.run(
+                        ['docker', 'stop', container],
+                        capture_output=True, text=True, timeout=30
+                    )
+                    
+                    if stop_result.returncode == 0:
+                        stopped.append(container)
+                    else:
+                        failed.append(container)
+                
+                if stopped:
+                    self.send_json_response({
+                        'success': True,
+                        'message': f'Stopped {len(stopped)} non-essential containers. Kept {len(essential_containers)} essential services running.',
+                        'stopped': stopped,
+                        'failed': failed if failed else None,
+                        'kept_running': essential_containers
+                    })
+                else:
+                    self.send_json_response({
+                        'success': False,
+                        'error': 'Failed to stop any containers',
+                        'failed': failed
+                    }, 500)
+            else:
+                self.send_json_response({
+                    'success': True,
+                    'message': 'No containers to stop (only essential services are running)',
+                    'kept_running': essential_containers
+                })
+                
+        except Exception as e:
+            self.send_json_response({'error': str(e)}, 500)
+    
+    def handle_containers_start_all(self):
+        """Start all containers."""
+        try:
+            # Get list of all stopped containers with aq-devsuite prefix
+            ps_result = subprocess.run(
+                ['docker', 'ps', '-a', '--format', '{{.Names}}\t{{.State}}', '--filter', 'name=aq-devsuite-'],
+                capture_output=True, text=True, timeout=10
+            )
+            
+            if ps_result.returncode != 0:
+                self.send_json_response({
+                    'success': False,
+                    'error': f'Failed to list containers: {ps_result.stderr}'
+                }, 500)
+                return
+            
+            # Parse container names and states
+            containers_to_start = []
+            for line in ps_result.stdout.strip().split('\n'):
+                if line.strip():
+                    parts = line.split('\t')
+                    if len(parts) == 2:
+                        name, state = parts
+                        if state.lower() != 'running':
+                            containers_to_start.append(name)
+            
+            # Start stopped containers
+            if containers_to_start:
+                started = []
+                failed = []
+                
+                for container in containers_to_start:
+                    start_result = subprocess.run(
+                        ['docker', 'start', container],
+                        capture_output=True, text=True, timeout=30
+                    )
+                    
+                    if start_result.returncode == 0:
+                        started.append(container)
+                    else:
+                        failed.append(container)
+                
+                if started:
+                    self.send_json_response({
+                        'success': True,
+                        'message': f'Started {len(started)} containers.',
+                        'started': started,
+                        'failed': failed if failed else None
+                    })
+                else:
+                    self.send_json_response({
+                        'success': False,
+                        'error': 'Failed to start any containers',
+                        'failed': failed
+                    }, 500)
+            else:
+                self.send_json_response({
+                    'success': True,
+                    'message': 'All containers are already running'
+                })
                 
         except Exception as e:
             self.send_json_response({'error': str(e)}, 500)

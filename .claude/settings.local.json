@@ -22,7 +22,15 @@
       "Bash(docker inspect:*)",
       "Bash(grep:*)",
       "Bash(docker system prune:*)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(docker restart:*)",
+      "Bash(docker stop:*)",
+      "Bash(docker rm:*)",
+      "Bash(docker ps:*)",
+      "Bash(docker volume rm:*)",
+      "Bash(docker volume:*)",
+      "Bash(./validate-database-setup.sh:*)",
+      "WebFetch(domain:github.com)"
     ],
     "deny": []
   }

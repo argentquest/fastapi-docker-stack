@@ -1,0 +1,16 @@
+{
+    "Servers": {
+        "1": {
+            "Name": "PostgreSQL Main",
+            "Group": "Databases",
+            "Host": "postgres",
+            "Port": 5432,
+            "MaintenanceDB": "poc_db",
+            "Username": "pocuser",
+            "SSLMode": "prefer",
+            "Shared": true,
+            "PassFile": "/var/lib/pgadmin/.pgpass",
+            "Comment": "Main PostgreSQL database (accessible via localhost:5432)"
+        }
+    }
+}

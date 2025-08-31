@@ -1,15 +1,40 @@
-# Contributing to FastAPI Docker Stack
+# Contributing to Argentquest Development Suite
 
-Thank you for your interest in contributing to the FastAPI Docker Stack! This document provides guidelines and instructions for contributing to the project.
+Thank you for your interest in contributing to the Argentquest Development Suite! This document provides guidelines and instructions for contributing to the project.
 
 ## 🎯 Project Overview
 
-This is a production-ready FastAPI microservices stack designed as a cost-effective alternative to cloud services. The architecture includes:
-- FastAPI application with async support
-- PostgreSQL with pgvector for vector similarity search
-- Redis for caching
-- MinIO for S3-compatible object storage
-- Nginx as reverse proxy
+This is a **comprehensive 22-container development environment** designed as a cost-effective alternative to cloud services, providing enterprise-grade functionality with 90% cost savings. The architecture includes:
+
+### Core Application Services
+- **Dual FastAPI environments**: Production (`app-prod`) and development (`app-dev`) containers
+- **Three environment configurations**: `.env`, `.env.dev`, `.env.prod` for flexible deployment
+
+### Database Services
+- **PostgreSQL 16** with pgvector extension for vector similarity search
+- **MongoDB 7.0** for NoSQL document storage
+- **Redis 7.2** for caching and session storage
+
+### Management Tools
+- **pgAdmin** for PostgreSQL management (pre-configured)
+- **Mongo Express** for MongoDB management
+- **Redis Commander** for Redis management
+- **Portainer** for Docker container management
+
+### Development Tools
+- **VS Code Server** for browser-based development
+- **MCP Inspector** for Model Context Protocol testing
+- **Jupyter Lab** for data science workflows
+- **n8n** for workflow automation
+
+### Infrastructure Services
+- **MinIO** for S3-compatible object storage
+- **Nginx Proxy Manager** for reverse proxy and SSL
+- **Beszel + Agent** for comprehensive monitoring
+- **System Monitor** for real-time container stats
+- **Heimdall** as application dashboard
+
+**Important Note**: This system is designed for **development and proof-of-concept use only** and is not production-ready without significant security hardening.
 
 ## 🤝 How to Contribute
 
@@ -42,18 +67,54 @@ This is a production-ready FastAPI microservices stack designed as a cost-effect
    pip install uv
    uv pip install -e .
 
-   # Copy environment template
-   cp .env.example .env
-   # Edit .env with your configuration
+   # Copy environment template and configure
+   cp .env.template .env
+   # Edit .env with your OpenRouter API key and other settings
+   
+   # Environment files overview:
+   # .env      - Main configuration for local development
+   # .env.dev  - Development container settings (debug mode)
+   # .env.prod - Production container settings (performance mode)
    ```
 
 3. **Start Development Environment**
    ```bash
-   # Start all containers
+   # Start all 22 containers
    docker-compose up -d
 
-   # Run tests to ensure everything works
-   python run_all_tests.py
+   # Wait for initialization (2-3 minutes for first startup)
+   sleep 180
+
+   # Set up NPM proxy hosts (for domain-based access)
+   python scripts/npm-simple-setup.py
+
+   # Validate deployment
+   python health-check.py
+   ./validate-database-setup.sh
+   ```
+
+4. **Configure Domain Access (Important!)**
+   
+   Add these entries to your hosts file for proper access:
+   
+   **Windows (Run as Administrator):**
+   ```cmd
+   notepad C:\Windows\System32\drivers\etc\hosts
+   ```
+   
+   **Linux/macOS:**
+   ```bash
+   sudo nano /etc/hosts
+   ```
+   
+   **Add these lines (use 127.0.0.1 for local development):**
+   ```
+   127.0.0.1    pocmaster.argentquest.com
+   127.0.0.1    api.pocmaster.argentquest.com
+   127.0.0.1    api-dev.pocmaster.argentquest.com
+   127.0.0.1    pgadmin.pocmaster.argentquest.com
+   127.0.0.1    portainer.pocmaster.argentquest.com
+   127.0.0.1    heimdall.pocmaster.argentquest.com
    ```
 
 ## 📝 Development Guidelines
@@ -73,17 +134,62 @@ This is a production-ready FastAPI microservices stack designed as a cost-effect
 4. **Security**: Follow security best practices (input validation, etc.)
 5. **Performance**: Consider performance implications of changes
 
+### Development Workflow
+
+#### **Hot-Reload Development**
+The `app-dev` container provides hot-reload functionality:
+- Edit code in the `./app/` directory on your host machine
+- Changes are automatically detected and applied (via volume mount)
+- Test your changes at `http://api-dev.pocmaster.argentquest.com`
+- Development logs are available with debug detail
+
+#### **Environment-Specific Testing** 
+Test your changes in different environments:
+```bash
+# Test development environment (single worker, debug logging)
+curl http://api-dev.pocmaster.argentquest.com/health
+
+# Test production environment (multiple workers, performance)  
+curl http://api.pocmaster.argentquest.com/health
+
+# Compare database connections
+docker exec aq-devsuite-app-dev env | grep DATABASE_URL
+docker exec aq-devsuite-app-prod env | grep DATABASE_URL
+```
+
+#### **Database Development**
+Both databases come with comprehensive test data:
+- **PostgreSQL**: Users, stories, world elements, AI test logs
+- **MongoDB**: User profiles, documents, world building, AI conversations
+
+Access databases for testing:
+```bash
+# PostgreSQL via pgAdmin: http://localhost:5050 (admin@example.com/admin)
+# MongoDB via Mongo Express: Available via NPM proxy
+
+# Direct database access
+docker exec -it aq-devsuite-postgres psql -U pocuser -d poc_db
+docker exec -it aq-devsuite-mongodb mongosh -u mongoadmin -p mongopass123 --authenticationDatabase admin
+```
+
 ### Testing Requirements
 
 - **Unit Tests**: Test individual functions and classes
-- **Integration Tests**: Test service interactions
-- **End-to-End Tests**: Test complete workflows
-- **Performance Tests**: Benchmark critical operations
-- **Security Tests**: Validate input handling and security measures
+- **Integration Tests**: Test service interactions with actual databases
+- **End-to-End Tests**: Test complete workflows across environments
+- **Container Health Tests**: Validate all 22 containers
+- **Database Tests**: Test PostgreSQL (with pgvector) and MongoDB functionality
+- **Security Tests**: Validate input handling and security measures (**Note: System has known vulnerabilities by design**)
 
 Run tests before submitting:
 ```bash
-# Run all tests
+# Run comprehensive health check (22 containers)
+python health-check.py
+
+# Validate database setup and test data
+./validate-database-setup.sh
+
+# Run all automated tests
 python run_all_tests.py
 
 # Run specific test categories
@@ -200,30 +306,60 @@ Please provide:
 
 ### Adding New Services
 
-When adding new containerized services:
+When adding new containerized services to the 22-container stack:
 
 1. **Update docker-compose.yml**
-   - Add service configuration
-   - Define health checks
-   - Set resource limits
-   - Configure networks
+   - Add service configuration with proper naming (`aq-devsuite-*`)
+   - Define health checks and dependencies
+   - Set resource limits and security settings
+   - Configure networks (`v2_network`)
+   - Add to appropriate environment files if needed
 
 2. **Create Service Integration**
    - Add service client in `app/services/`
    - Implement health check endpoint
-   - Add configuration in `app/core/config.py`
+   - Add configuration to environment files (`.env`, `.env.dev`, `.env.prod`)
    - Update initialization in `app/main.py`
+   - Consider dual-environment support (dev/prod containers)
 
-3. **Add Comprehensive Tests**
+3. **Add Management and Monitoring**
+   - Update NPM proxy setup script (`scripts/npm-simple-setup.py`)
+   - Add monitoring to Beszel configuration
+   - Include in system monitor dashboard
+   - Update Heimdall dashboard links
+
+4. **Add Comprehensive Tests**
    - Service-specific test file
-   - Integration with existing tests
-   - Update end-to-end test scenarios
+   - Update health check tests (`test_01_containers_health.py`)
+   - Integration with existing test scenarios
+   - Update container count expectations (currently 22)
 
-4. **Update Documentation**
-   - README.md service descriptions
-   - Architecture diagrams
-   - Configuration examples
-   - Docker Compose comments
+5. **Update Documentation**
+   - README.md service descriptions and architecture section
+   - Update container count and service directory
+   - Architecture diagrams and flow charts
+   - Configuration examples and credentials reference
+   - Docker Compose comments and service descriptions
+
+### Environment Configuration Changes
+
+When modifying environment configurations:
+
+1. **Update All Environment Files**
+   - `.env` - Local development configuration
+   - `.env.dev` - Development container settings
+   - `.env.prod` - Production container settings
+   - Maintain consistency across environments
+
+2. **Database Connection Updates**
+   - Use Docker container names for internal communication
+   - Document localhost access for external tools
+   - Update validation scripts accordingly
+
+3. **Security Considerations**
+   - Remember this is a development system with known vulnerabilities
+   - Document any new security implications
+   - Update SECURITY.md if introducing new services with default credentials
 
 ### Performance Improvements
 
@@ -237,17 +373,62 @@ When adding new containerized services:
 ### Recommended VS Code Extensions
 
 The project includes comprehensive VS Code configuration:
-- Python extension pack
-- Docker extension
-- GitLens for Git integration
-- Database tools for PostgreSQL
+- **Python extension pack** for FastAPI development
+- **Docker extension** for container management
+- **GitLens** for Git integration
+- **Database tools** for PostgreSQL and MongoDB
+
+### Development Environment Access
+
+#### **Browser-Based Development**
+- **VS Code Server**: http://code.pocmaster.argentquest.com (password: `dev123`)
+- **Jupyter Lab**: http://jupyter.pocmaster.argentquest.com (password: `changeme`)
+- **n8n Workflows**: http://n8n.pocmaster.argentquest.com (for automation testing)
+
+#### **Database Management**
+- **pgAdmin**: http://localhost:5050 (`admin@example.com` / `admin`)  
+- **Mongo Express**: Available via NPM proxy (`admin` / `admin`)
+- **Redis Commander**: Available via NPM proxy
+
+#### **System Monitoring**
+- **System Monitor**: http://pocmaster.argentquest.com (real-time container stats)
+- **Beszel Monitoring**: http://beszel.pocmaster.argentquest.com (`admin@example.com` / `changeme`)
+- **Portainer**: http://localhost:9443 (Docker management)
+- **NPM Admin**: http://localhost:81 (`admin@example.com` / `changeme`)
 
 ### Debugging
 
-Use the provided VS Code launch configurations:
-- Debug FastAPI application
+#### **Local Debugging**
+Use VS Code launch configurations for:
+- Debug FastAPI application with hot-reload
 - Debug individual test files
-- Attach to Docker containers
+- Attach to running Docker containers
+
+#### **Container Debugging**
+```bash
+# View container logs
+docker-compose logs -f app-dev
+docker-compose logs -f app-prod
+
+# Access container shell
+docker exec -it aq-devsuite-app-dev bash
+docker exec -it aq-devsuite-postgres psql -U pocuser -d poc_db
+
+# Monitor container resources
+docker stats
+```
+
+#### **Environment-Specific Debugging**
+```bash
+# Compare environment configurations
+cat .env | grep DATABASE_URL
+cat .env.dev | grep DATABASE_URL  
+cat .env.prod | grep DATABASE_URL
+
+# Test environment-specific features
+curl http://api-dev.pocmaster.argentquest.com/docs   # Development API docs
+curl http://api.pocmaster.argentquest.com/docs       # Production API docs
+```
 
 ### Local Testing
 
@@ -324,9 +505,34 @@ Contributors will be recognized in:
 - GitHub contributors page
 - Special recognition for significant contributions
 
-Thank you for helping make FastAPI Docker Stack better for everyone! 🎉
+## 🚨 Important Contribution Notes
+
+### Security Awareness
+**Remember**: This is a development system with known security vulnerabilities:
+- Default credentials throughout the system
+- No authentication on API endpoints  
+- Development configurations not suitable for production
+- Always review SECURITY.md before contributing security-related changes
+
+### Environment Consistency
+When contributing:
+- Test changes in both `app-dev` and `app-prod` environments
+- Ensure database connections work with Docker network names
+- Validate that all 22 containers remain healthy
+- Update environment files consistently
+
+### Documentation Priority
+Given the complexity of the 22-container system:
+- Always update documentation for architectural changes
+- Include clear examples and step-by-step instructions
+- Update service counts and URLs in multiple documentation files
+- Test documentation steps on a fresh environment
+
+Thank you for helping make the Argentquest Development Suite better for everyone! 🎉
 
 ---
 
-**Last Updated**: January 23, 2025  
-**Version**: 1.0
+**Last Updated**: August 31, 2025  
+**Version**: 2.0  
+**Project**: Argentquest Development Suite (22 containers)  
+**Status**: Development/POC Environment
