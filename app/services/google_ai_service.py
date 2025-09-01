@@ -90,9 +90,9 @@ class GoogleAIService:
         if not self.is_available or not self.client:
             raise RuntimeError("Google AI service is not available. Please configure GOOGLE_API_KEY.")
             
-        # Use provided model or fall back to gemini-2.5-flash-image-preview
+        # Use provided model or fall back to Google default model
         # This model supports both text and image generation
-        target_model = model or "gemini-2.5-flash-image-preview"
+        target_model = model or settings.GOOGLE_DEFAULT_MODEL
         logger.info(f"Generating Google AI response using model: {target_model}, temperature: {temperature}, max_tokens: {max_tokens}")
         logger.debug(f"System prompt length: {len(system_prompt)} chars, User context length: {len(user_context)} chars")
 

@@ -86,3 +86,66 @@ Database:
 - Additional AI model integrations
 
 ---
+
+## 2025-09-01 16:30 UTC - Frontend Enhancements & OpenRouter Fixes
+
+### **Major Updates**
+- ✅ **Enhanced Dashboard** - Added frontend URLs and live service status monitoring
+- ✅ **API Default Values** - Pre-filled test values in Swagger docs (/docs)
+- ✅ **OpenRouter Authentication Fix** - New API key and header corrections
+- ✅ **Google ADK Service** - Added Agent Development Kit integration
+- ✅ **Model Separation** - Different models for OpenRouter vs Google services
+
+### **Dashboard Improvements**
+- **Frontend Experiments Section** - Direct links to Claude and Gemini frontends
+- **Live Service Status** - Real-time health monitoring with color-coded status
+- **Enhanced Quick Actions** - Functional health testing and external links
+- **Professional UI** - Improved layout and user experience
+
+### **API Testing Enhancements**
+- **Default Values in /docs** - Pre-filled forms for easier testing
+  - AITestRequest: Default system prompt and user context
+  - SimplePromptRequest: Default "Hello! How are you today?" prompt
+  - TopicRequest: Ready for agentic workflows with default topic
+- **Google ADK Integration** - New service for advanced agent capabilities
+
+### **Configuration & Model Management**
+- **Model Separation**:
+  - OpenRouter: `google/gemini-2.5-flash-lite` 
+  - Google AI: `gemini-2.5-flash-image-preview`
+- **Fixed OpenRouter Headers** - Corrected "HTTP-Referer" to "Referer"
+- **New OpenRouter API Key** - Updated authentication credentials
+
+### **Testing & Validation**
+- ✅ Comprehensive frontend-backend connectivity testing
+- ✅ Google AI endpoints fully functional
+- ✅ Fixed API client base URL (localhost → 127.0.0.1)
+- ✅ Created automated test scripts
+
+### **Files Modified/Added**
+```
+New Files:
+├── app/services/google_adk_service.py    # Google ADK integration
+├── FRONTEND_TEST_LOG.md                  # Test results documentation
+├── test_frontend_api.py                  # Automated testing script
+├── test_openrouter_direct.py            # OpenRouter configuration test
+└── AGENTIC_GEN.MD                       # Agentic workflow specification
+
+Modified Files:
+├── frontendclaude/pages/dashboard.py     # Enhanced dashboard
+├── app/routes/ai.py                     # API default values
+├── app/core/config.py                   # Model separation
+├── app/services/openrouter_service.py   # Fixed headers
+├── frontendclaude/utils/api_client.py   # Fixed base URL
+├── .env                                 # Model configuration
+└── pyproject.toml                       # Google ADK dependency
+```
+
+### **Production Deployment Ready**
+- ✅ All changes tested locally
+- ✅ Enhanced user experience with live dashboard
+- ✅ Improved API testing with default values
+- ✅ Model configuration properly separated
+- ✅ OpenRouter authentication issues resolved
+
+---

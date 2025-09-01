@@ -42,6 +42,8 @@ class Settings(BaseSettings):
     OPENROUTER_SITE_URL: str = Field(default="http://localhost:8000", description="The site URL to send as a referrer to OpenRouter.")
     OPENROUTER_APP_NAME: str = Field(default="InkAndQuill-V2-POC", description="The application name to send to OpenRouter.")
     DEFAULT_MODEL: str = Field(default="deepseek/deepseek-r1", description="The default AI model to use for generation.")
+    OPENROUTER_DEFAULT_MODEL: str = Field(default="google/gemini-2.5-flash-lite", description="The default model for OpenRouter services.")
+    GOOGLE_DEFAULT_MODEL: str = Field(default="gemini-2.5-flash-image-preview", description="The default model for Google AI services.")
     
     # --- Alternative AI Provider Configuration (Azure OpenAI) ---
     AZURE_OPENAI_ENDPOINT: Optional[str] = Field(default=None, description="Azure OpenAI endpoint URL.")

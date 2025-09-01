@@ -17,18 +17,7 @@ from nicegui import ui
 # Frontend integrations
 from frontendclaude.main import setup_claude_frontend
 
-# Placeholder for Gemini frontend
-def setup_gemini_frontend(fastapi_app: FastAPI, prefix: str = "/gemini", register_only: bool = False):
-    """
-    Placeholder for Gemini frontend setup.
-    This will be replaced when frontendgemini is implemented.
-    """
-    @ui.page(f'{prefix}/')
-    def gemini_placeholder():
-        ui.label('Frontend Gemini').classes('text-h4')
-        ui.label('Coming soon! This will be the Gemini-based frontend.').classes('text-subtitle1')
-        ui.link('← Back to Claude Frontend', '/claude/').classes('text-primary')
-        ui.link('← Back to API Docs', '/docs').classes('text-primary q-ml-md')
+from frontendgemini.main import setup_gemini_frontend
 
 # V2 Services - Import required for lifecycle management
 from app.core.config import settings
@@ -70,20 +59,20 @@ async def lifespan(app: FastAPI):
 
     # Print startup banner
     print("\n" + "="*75)
-    print("🚀 InkAndQuill V2 POC - Multi-Service AI Architecture")
+    print("InkAndQuill V2 POC - Multi-Service AI Architecture")
     print("="*75)
-    print("📋 Objective: Demonstrate scalable microservices with AI integration")
-    print("🔧 Services: PostgreSQL, Redis, MinIO, MongoDB, AI (OpenRouter/Google)")
+    print("Objective: Demonstrate scalable microservices with AI integration")
+    print("Services: PostgreSQL, Redis, MinIO, MongoDB, AI (OpenRouter/Google)")
     print("")
-    print("🎯 Frontend Experiments - Two UI Approaches:")
-    print("   💙 Frontend Claude:  http://localhost:8001/claude/")
-    print("   💚 Frontend Gemini:  http://localhost:8001/gemini/")
+    print("Frontend Experiments - Two UI Approaches:")
+    print("   Frontend Claude:  http://localhost:8001/claude/")
+    print("   Frontend Gemini:  http://localhost:8001/gemini/")
     print("")
-    print("📚 API Documentation: http://localhost:8001/docs")
-    print("🌐 Live Demo:         https://pocmaster.argentquest.com")
-    print("💻 GitHub Repository: https://github.com/argentquest/fastapi-docker-stack")
+    print("API Documentation: http://localhost:8001/docs")
+    print("Live Demo:         https://pocmaster.argentquest.com")
+    print("GitHub Repository: https://github.com/argentquest/fastapi-docker-stack")
     print("")
-    print("✅ Server is running and ready to accept requests!")
+    print("Server is running and ready to accept requests!")
     print("="*75 + "\n")
 
     yield

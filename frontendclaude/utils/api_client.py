@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 class APIClient:
     """Client for communicating with FastAPI backend."""
     
-    def __init__(self, base_url: str = "http://localhost:8001"):
+    def __init__(self, base_url: str = "http://127.0.0.1:8001"):
         self.base_url = base_url.rstrip('/')
         self.timeout = 60.0  # Increased to 60 seconds for AI operations
     
@@ -88,6 +88,15 @@ class APIClient:
         """Send prompt to OpenRouter LangGraph endpoint."""
         data = {"prompt": prompt}
         return await self.post("/openrouter/langgraph", data)
+    
+    async def google_adk_test(self) -> Dict[str, Any]:
+        """Test Google ADK agent connectivity."""
+        return await self.get("/google-adk/test")
+    
+    async def google_adk_prompt(self, prompt: str) -> Dict[str, Any]:
+        """Send prompt to Google ADK agent."""
+        data = {"prompt": prompt}
+        return await self.post("/google-adk/agent", data)
 
 
 # Global API client instance

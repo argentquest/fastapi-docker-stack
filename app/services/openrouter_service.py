@@ -47,11 +47,11 @@ class OpenRouterService:
 
         # OpenRouter allows identifying your app with specific headers.
         default_headers = {
-            "HTTP-Referer": settings.OPENROUTER_SITE_URL,
+            "Referer": settings.OPENROUTER_SITE_URL,  # Fixed: Use "Referer" not "HTTP-Referer"
             "X-Title": settings.OPENROUTER_APP_NAME
         }
 
-        logger.debug(f"Using headers: HTTP-Referer={settings.OPENROUTER_SITE_URL}, X-Title={settings.OPENROUTER_APP_NAME}")
+        logger.debug(f"Using headers: Referer={settings.OPENROUTER_SITE_URL}, X-Title={settings.OPENROUTER_APP_NAME}")
 
         client = openai.AsyncOpenAI(
             api_key=settings.OPENROUTER_API_KEY,
@@ -83,7 +83,7 @@ class OpenRouterService:
         Raises:
             RuntimeError: If the API call fails or returns an empty response.
         """
-        target_model = model or settings.DEFAULT_MODEL
+        target_model = model or settings.OPENROUTER_DEFAULT_MODEL
         logger.info(f"Generating AI response using model: {target_model}, temperature: {temperature}, max_tokens: {max_tokens}")
         logger.debug(f"System prompt length: {len(system_prompt)} chars, User context length: {len(user_context)} chars")
 

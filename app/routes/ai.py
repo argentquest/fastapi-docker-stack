@@ -19,6 +19,7 @@ from app.services.openrouter_service import openrouter_service
 from app.services.openrouter_langchain_service import openrouter_langchain_service
 from app.services.openrouter_langgraph_service import openrouter_langgraph_service
 from app.services.google_ai_service import google_ai_service
+from app.services.google_adk_service import google_adk_service
 from app.services.embedding_service import embedding_service
 from app.services.storage_service import storage_service
 from app.services.database_service import database_service
@@ -36,13 +37,13 @@ router = APIRouter(tags=["AI"])
 class AITestRequest(BaseModel):
     """Request model for the /ai-test endpoint."""
     system_prompt: str = Field(
-        ...,
+        default="You are a helpful AI assistant. Provide clear and informative responses.",
         min_length=1,
         max_length=5000,
         description="System prompt to guide the AI's behavior."
     )
     user_context: str = Field(
-        ...,
+        default="Explain what microservices are in one sentence.",
         min_length=1,
         max_length=10000,
         description="The user's query or context for the AI to process."
@@ -63,7 +64,7 @@ class AITestRequest(BaseModel):
 class SimplePromptRequest(BaseModel):
     """Request model for simple prompt endpoints."""
     prompt: str = Field(
-        ...,
+        default="Hello! How are you today?",
         min_length=1,
         max_length=10000,
         description="The prompt to send to the AI service."
@@ -83,6 +84,16 @@ class SimplePromptResponse(BaseModel):
     service_type: str
     model: str
     response_time_ms: int
+
+
+class TopicRequest(BaseModel):
+    """Request model for agentic blog generation endpoints."""
+    topic: str = Field(
+        default="The future of artificial intelligence",
+        min_length=1,
+        max_length=500,
+        description="The topic for blog generation."
+    )
 
 
 class AITestResponse(BaseModel):
@@ -241,7 +252,7 @@ async def google_ai_test():
                 'status': 'success',
                 'message': 'Google AI service is working correctly!',
                 'api_key_configured': True,
-                'model': "gemini-2.5-flash-image-preview",
+                'model': settings.GOOGLE_DEFAULT_MODEL,
                 'test_response': test_response,
                 'health_check': health_status,
                 'service': 'Google AI'
@@ -284,7 +295,7 @@ async def google_ai_gemini_endpoint(request: SimplePromptRequest):
         return SimplePromptResponse(
             response=response,
             service_type="Google AI Gemini",
-            model="gemini-2.5-flash-image-preview",
+            model=settings.GOOGLE_DEFAULT_MODEL,
             response_time_ms=response_time_ms
         )
     except Exception as e:
@@ -313,7 +324,7 @@ async def openrouter_simple_endpoint(request: SimplePromptRequest):
         return SimplePromptResponse(
             response=response,
             service_type="OpenRouter Basic",
-            model=settings.DEFAULT_MODEL,
+            model=settings.OPENROUTER_DEFAULT_MODEL,
             response_time_ms=response_time_ms
         )
     except Exception as e:
@@ -340,7 +351,7 @@ async def openrouter_langchain_endpoint(request: SimplePromptRequest):
         return SimplePromptResponse(
             response=response,
             service_type="OpenRouter LangChain",
-            model=settings.DEFAULT_MODEL,
+            model=settings.OPENROUTER_DEFAULT_MODEL,
             response_time_ms=response_time_ms
         )
     except Exception as e:
@@ -367,9 +378,109 @@ async def openrouter_langgraph_endpoint(request: SimplePromptRequest):
         return SimplePromptResponse(
             response=response,
             service_type="OpenRouter LangGraph",
-            model=settings.DEFAULT_MODEL,
+            model=settings.OPENROUTER_DEFAULT_MODEL,
             response_time_ms=response_time_ms
         )
     except Exception as e:
         logger.error(f"Error in OpenRouter LangGraph endpoint: {e}")
         raise HTTPException(status_code=500, detail="OpenRouter LangGraph service error")
+
+
+# --- Google ADK Endpoints ---
+
+@router.get("/google-adk/test", summary="Test Google ADK agent connectivity and configuration")
+async def google_adk_test():
+    """
+    Tests Google ADK agent service connectivity and configuration.
+    
+    This endpoint performs a quick test to verify:
+    - Google API key is configured
+    - ADK agent is properly initialized
+    - Can generate responses using the agent framework
+    
+    Returns detailed status information about the Google ADK service.
+    """
+    logger.info("Testing Google ADK agent service connectivity...")
+    
+    try:
+        # First check if service is available
+        if not google_adk_service.is_available:
+            return {
+                'status': 'error',
+                'message': 'Google ADK service is not available. Please configure GOOGLE_API_KEY in your .env file.',
+                'api_key_configured': False,
+                'service': 'Google ADK'
+            }
+        
+        # Get agent information
+        agent_info = google_adk_service.get_agent_info()
+        
+        # Perform health check
+        health_status = await google_adk_service.health_check()
+        
+        # If healthy, do a simple test generation
+        if health_status.get('status') == 'healthy':
+            test_response = await google_adk_service.generate_response(
+                system_prompt="You are a test assistant using Google ADK.",
+                user_context="Say 'Google ADK agent working!' in exactly 5 words.",
+                max_tokens=50,
+                temperature=0.1
+            )
+            
+            return {
+                'status': 'success',
+                'message': 'Google ADK agent service is working correctly!',
+                'api_key_configured': True,
+                'agent_info': agent_info,
+                'test_response': test_response,
+                'health_check': health_status,
+                'service': 'Google ADK'
+            }
+        else:
+            return {
+                'status': 'error',
+                'message': 'Google ADK agent health check failed',
+                'api_key_configured': True,
+                'agent_info': agent_info,
+                'health_check': health_status,
+                'service': 'Google ADK'
+            }
+            
+    except Exception as e:
+        logger.error(f"Error testing Google ADK service: {e}")
+        return {
+            'status': 'error',
+            'message': f'Failed to test Google ADK service: {str(e)}',
+            'api_key_configured': bool(settings.GOOGLE_API_KEY),
+            'service': 'Google ADK'
+        }
+
+
+@router.post("/google-adk/agent", response_model=SimplePromptResponse)
+async def google_adk_agent_endpoint(request: SimplePromptRequest):
+    """
+    Google ADK endpoint using Agent Development Kit framework.
+    
+    This endpoint uses Google's ADK agent framework for enhanced AI capabilities
+    including tool support, multi-agent workflows, and sophisticated orchestration.
+    """
+    start_time = time.time()
+    default_system_prompt = "You are a sophisticated AI agent powered by Google's ADK framework. Provide thoughtful, well-structured responses using agent capabilities."
+    
+    try:
+        response = await google_adk_service.generate_response(
+            system_prompt=default_system_prompt,
+            user_context=request.prompt
+        )
+        
+        response_time_ms = int((time.time() - start_time) * 1000)
+        
+        return SimplePromptResponse(
+            response=response,
+            service_type="Google ADK Agent",
+            model=settings.GOOGLE_DEFAULT_MODEL,
+            response_time_ms=response_time_ms
+        )
+    except Exception as e:
+        logger.error(f"Error in Google ADK agent endpoint: {e}")
+        raise HTTPException(status_code=500, detail="Google ADK agent service error")

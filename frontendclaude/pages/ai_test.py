@@ -22,6 +22,7 @@ def create_ai_test_page():
     with ui.tabs().classes('w-full') as tabs:
         comprehensive_tab = ui.tab('Comprehensive Test')
         google_tab = ui.tab('Google AI')
+        google_adk_tab = ui.tab('Google ADK')
         openrouter_tab = ui.tab('OpenRouter')
     
     with ui.tab_panels(tabs, value=comprehensive_tab).classes('w-full'):
@@ -168,6 +169,84 @@ def create_ai_test_page():
                 
                 finally:
                     google_btn.props('loading=false')
+        
+        # Google ADK Tab
+        with ui.tab_panel(google_adk_tab):
+            with Navigation.create_card("Google ADK Agent", "psychology_alt"):
+                ui.label("Test Google Agent Development Kit - Enhanced agent framework with tool support").classes('text-body2 text-grey-7 q-mb-md')
+                
+                with ui.row().classes('w-full'):
+                    with ui.column().classes('col-6'):
+                        ui.button("Test ADK Connection", 
+                                 on_click=lambda: test_adk_connection(),
+                                 icon="link").classes('w-full q-mb-md')
+                        
+                        adk_prompt = ui.textarea(
+                            label="Prompt",
+                            placeholder="Enter your prompt for Google ADK Agent...",
+                            value="Explain how AI agents differ from traditional chatbots."
+                        ).classes('w-full')
+                        
+                        adk_btn = ui.button("Send to ADK Agent", 
+                                          on_click=lambda: test_google_adk(),
+                                          icon="smart_toy").classes('w-full')
+                    
+                    with ui.column().classes('col-6'):
+                        adk_result = ui.markdown().classes('w-full')
+            
+            async def test_adk_connection():
+                """Test Google ADK connection."""
+                try:
+                    response = await api_client.google_adk_test()
+                    if response.get('status') == 'success':
+                        agent_info = response.get('agent_info', {})
+                        adk_result.content = f"""
+## ✅ Google ADK Agent Connected!
+
+**Agent Name:** {agent_info.get('name', 'Unknown')}
+**Framework:** {agent_info.get('framework', 'Google ADK')}
+**Model:** {agent_info.get('model', 'Unknown')}
+**Tools Count:** {agent_info.get('tools_count', 0)}
+**Test Response:** {response.get('test_response', 'No response')}
+                        """
+                    else:
+                        adk_result.content = f"""
+## ❌ Connection Failed
+
+{response.get('message', 'Unknown error')}
+                        """
+                except Exception as e:
+                    adk_result.content = f"## ❌ Error\n\n{str(e)}"
+            
+            async def test_google_adk():
+                """Send prompt to Google ADK Agent."""
+                adk_btn.props('loading')
+                adk_result.content = "🔄 ADK Agent processing..."
+                
+                try:
+                    response = await api_client.google_adk_prompt(adk_prompt.value)
+                    
+                    if is_success_response(response):
+                        adk_result.content = f"""
+## 🤖 Google ADK Agent Response
+
+{response.get('response', 'No response')}
+
+**Service:** {response.get('service_type', 'Unknown')}
+**Model:** {response.get('model', 'Unknown')}  
+**Response Time:** {format_response_time(response.get('response_time_ms', 0))}
+
+*This response was generated using Google's Agent Development Kit framework*
+                        """
+                    else:
+                        error_msg = extract_error_message(response)
+                        adk_result.content = f"## ❌ Error\n\n{error_msg}"
+                        
+                except Exception as e:
+                    adk_result.content = f"## ❌ Connection Error\n\n{str(e)}"
+                
+                finally:
+                    adk_btn.props('loading=false')
         
         # OpenRouter Tab
         with ui.tab_panel(openrouter_tab):

@@ -34,7 +34,10 @@
       "Bash(git pull:*)",
       "Bash(./database-setup.sh:*)",
       "Bash(./setup-environment-databases.sh:*)",
-      "Bash(pip install:*)"
+      "Bash(pip install:*)",
+      "WebFetch(domain:google.github.io)",
+      "Bash(uvicorn:*)",
+      "Bash(timeout:*)"
     ],
     "deny": []
   }
