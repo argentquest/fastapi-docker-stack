@@ -193,7 +193,7 @@ $$ LANGUAGE plpgsql;
 
 -- Grant all necessary permissions to the application user (`pocuser`).
 -- This ensures the FastAPI application can read, write, and execute functions.
-GRANT ALL PRIVILEGES ON DATABASE poc_db TO pocuser;
+GRANT ALL PRIVILEGES ON DATABASE poc_local TO pocuser;
 GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO pocuser;
 GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO pocuser;
 GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO pocuser;

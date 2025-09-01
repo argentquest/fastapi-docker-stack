@@ -1,10 +1,18 @@
 # pgAdmin password file for PostgreSQL
 # Format: hostname:port:database:username:password
 
-# Main PostgreSQL Database
+# PostgreSQL Database - Docker network access
 postgres:5432:poc_db:pocuser:pocpass
 postgres:5432:*:pocuser:pocpass
 
-# Add additional connections here manually:
-# Example: localhost:5432:*:pocuser:pocpass
-# Example: remote-host:5432:*:username:password
+# PostgreSQL Database - Localhost access (via host.docker.internal) 
+host.docker.internal:5432:poc_db:pocuser:pocpass
+host.docker.internal:5432:*:pocuser:pocpass
+
+# Test Database
+postgres:5432:test_db:pocuser:pocpass
+host.docker.internal:5432:test_db:pocuser:pocpass
+
+# Additional database connections
+postgres:5432:template1:pocuser:pocpass
+postgres:5432:postgres:pocuser:pocpass

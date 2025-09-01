@@ -176,7 +176,7 @@ services:
     environment:
       - POSTGRES_USER=pocuser
       - POSTGRES_PASSWORD=pocpass
-      - POSTGRES_DB=poc_db
+      - POSTGRES_DB=poc_local
       - POSTGRES_INITDB_ARGS=--encoding=UTF-8
     volumes:
       - postgres_data:/var/lib/postgresql/data

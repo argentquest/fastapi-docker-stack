@@ -1,16 +1,37 @@
 {
     "Servers": {
         "1": {
-            "Name": "PostgreSQL Main",
-            "Group": "Databases",
+            "Name": "Local Environment",
+            "Group": "V2 POC Environments",
             "Host": "postgres",
             "Port": 5432,
-            "MaintenanceDB": "poc_db",
+            "MaintenanceDB": "poc_local",
             "Username": "pocuser",
             "SSLMode": "prefer",
             "Shared": true,
-            "PassFile": "/var/lib/pgadmin/.pgpass",
-            "Comment": "Main PostgreSQL database (accessible via localhost:5432)"
+            "Comment": "Local development database with sample data"
+        },
+        "2": {
+            "Name": "Dev Environment",
+            "Group": "V2 POC Environments",
+            "Host": "postgres",
+            "Port": 5432,
+            "MaintenanceDB": "poc_dev",
+            "Username": "pocuser",
+            "SSLMode": "prefer",
+            "Shared": true,
+            "Comment": "Development/testing database with QA data"
+        },
+        "3": {
+            "Name": "Prod Environment",
+            "Group": "V2 POC Environments",
+            "Host": "postgres",
+            "Port": 5432,
+            "MaintenanceDB": "poc_prod",
+            "Username": "pocuser",
+            "SSLMode": "prefer",
+            "Shared": true,
+            "Comment": "Production database with live data"
         }
     }
 }

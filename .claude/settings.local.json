@@ -30,7 +30,11 @@
       "Bash(docker volume rm:*)",
       "Bash(docker volume:*)",
       "Bash(./validate-database-setup.sh:*)",
-      "WebFetch(domain:github.com)"
+      "WebFetch(domain:github.com)",
+      "Bash(git pull:*)",
+      "Bash(./database-setup.sh:*)",
+      "Bash(./setup-environment-databases.sh:*)",
+      "Bash(pip install:*)"
     ],
     "deny": []
   }

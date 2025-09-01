@@ -47,11 +47,14 @@ class Settings(BaseSettings):
     AZURE_OPENAI_ENDPOINT: Optional[str] = Field(default=None, description="Azure OpenAI endpoint URL.")
     AZURE_OPENAI_API_KEY: Optional[str] = Field(default=None, description="Azure OpenAI API key.")
     AZURE_OPENAI_DEPLOYMENT_NAME: Optional[str] = Field(default=None, description="Azure OpenAI deployment name.")
+    
+    # --- Google AI Configuration (Gemini API) ---
+    GOOGLE_API_KEY: Optional[str] = Field(default=None, description="Google AI API key for Gemini models.")
 
     # --- Database Configuration (PostgreSQL) ---
     POSTGRES_USER: str = Field(default="pocuser", description="PostgreSQL username.")
     POSTGRES_PASSWORD: str = Field(default="pocpass", description="PostgreSQL password.")
-    POSTGRES_DB: str = Field(default="poc_db", description="PostgreSQL database name.")
+    POSTGRES_DB: str = Field(default="poc_local", description="PostgreSQL database name.")
     DATABASE_URL: str = Field(description="The full connection string for the PostgreSQL database.")
     DB_POOL_MIN_SIZE: int = Field(default=2, ge=1, description="Minimum number of connections in the database pool.")
     DB_POOL_MAX_SIZE: int = Field(default=10, ge=1, description="Maximum number of connections in the database pool.")
