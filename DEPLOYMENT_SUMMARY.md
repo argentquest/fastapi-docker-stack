@@ -23,13 +23,19 @@
 
 ### 📁 Key Files Modified
 ```
-Modified Files:
+Critical Production Files:
+├── docker-compose.prod.yml              # ⚠️  FIXED - Added all AI environment variables
+├── .env.prod                            # ⚠️  UPDATED - Production environment config  
+├── .env.template                        # Template with new AI variables
+└── .env.example                         # Example configuration updated
+
+Application Files:
 ├── frontendclaude/pages/dashboard.py     # Enhanced UI with frontend URLs
 ├── app/routes/ai.py                     # Default values for testing
 ├── app/core/config.py                   # Model separation
 ├── app/services/openrouter_service.py   # Header fixes
 ├── frontendclaude/utils/api_client.py   # Base URL fix
-└── .env                                 # Updated model configuration
+└── .env.dev                             # Development environment
 
 New Files:
 ├── app/services/google_adk_service.py   # Google ADK integration
@@ -37,6 +43,7 @@ New Files:
 ├── test_frontend_api.py                 # Automated testing script
 ├── test_openrouter_direct.py            # Configuration validation
 ├── AGENTIC_GEN.MD                       # Workflow specification
+├── DEPLOYMENT_SUMMARY.md                # This deployment guide
 └── frontendgemini/                      # Placeholder structure
 ```
 
@@ -53,6 +60,8 @@ New Files:
 
 ### 🚀 Deployment Steps for pocmaster.argentquest.com
 
+**IMPORTANT**: pocmaster.argentquest.com uses the **hardened production configuration** (`docker-compose.prod.yml`), not the standard development compose file.
+
 1. **Pull Latest Code**:
    ```bash
    cd /path/to/deployment
@@ -60,11 +69,12 @@ New Files:
    ```
 
 2. **Update Environment**:
-   - All `.env` template files updated with new configuration structure
-   - Required environment variables for production:
+   - **Critical**: Update `.env.prod` with production values
+   - All environment files have been updated with new structure
+   - Required environment variables in `.env.prod`:
      ```bash
      # OpenRouter Configuration
-     OPENROUTER_API_KEY=your-api-key-here
+     OPENROUTER_API_KEY=your-production-api-key-here
      OPENROUTER_SITE_URL=https://pocmaster.argentquest.com
      OPENROUTER_APP_NAME=V2-POC-Production
      OPENROUTER_DEFAULT_MODEL=google/gemini-2.5-flash-lite
@@ -74,10 +84,13 @@ New Files:
      GOOGLE_DEFAULT_MODEL=gemini-2.5-flash-image-preview
      ```
 
-3. **Restart Services** (Important for OpenRouter fix):
+3. **Deploy with Production Configuration** (Critical - uses hardened security):
    ```bash
-   docker-compose down
-   docker-compose up -d
+   # Stop any existing deployment
+   docker-compose -f docker-compose.prod.yml down
+   
+   # Deploy with production hardened configuration
+   docker-compose -f docker-compose.prod.yml up -d
    ```
 
 4. **Verify Deployment**:
