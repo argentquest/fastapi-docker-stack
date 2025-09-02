@@ -44,8 +44,10 @@ COPY pyproject.toml uv.lock* README.md ./
 # This avoids reinstalling all dependencies, making the build much faster.
 COPY --from=builder /app/.venv /app/.venv
 
-# Copy the application source code into the container.
+# Copy the application source code and frontend modules into the container.
 COPY app/ app/
+COPY frontendclaude/ frontendclaude/
+COPY frontendgemini/ frontendgemini/
 
 # Create a non-root user and group for security.
 # Running as a non-root user is a critical security best practice.
