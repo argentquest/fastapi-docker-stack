@@ -111,6 +111,27 @@ chmod +x setup.sh && ./setup.sh
 
 ## 🚀 Quick Start
 
+### Windows Users - Automated Startup Scripts
+
+We provide PowerShell scripts that automatically check if Docker Desktop is running, start it if needed, and manage your containers:
+
+```powershell
+# Start environment (auto-starts Docker Desktop if needed)
+.\start.ps1
+
+# Check status of all services
+.\status.ps1
+
+# Restart all containers
+.\restart.ps1
+
+# Stop environment (with cleanup options)
+.\stop.ps1
+
+# Alternative: Use batch files if preferred
+start.bat
+```
+
 ### 🖥️ Local & Server Deployment Guide
 
 These steps cover both local development and deployment on a fresh Ubuntu 24.04 LTS server.
