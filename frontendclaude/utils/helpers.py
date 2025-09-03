@@ -66,14 +66,84 @@ def format_json(data: Dict[str, Any]) -> str:
 
 def extract_error_message(response: Dict[str, Any]) -> str:
     """Extract user-friendly error message from API response."""
-    if 'error' in response:
-        return response['error']
-    elif 'detail' in response:
-        return response['detail'] 
-    elif 'message' in response:
-        return response['message']
-    else:
-        return "Unknown error occurred"
+    # Handle HTTP error responses
+    if isinstance(response, dict):
+        # Check for standard error fields
+        if 'error' in response:
+            error = response['error']
+            # Handle nested error structures
+            if isinstance(error, dict):
+                if 'message' in error:
+                    return error['message']
+                elif 'detail' in error:
+                    return error['detail']
+                else:
+                    return str(error)
+            return str(error)
+        elif 'detail' in response:
+            detail = response['detail']
+            # Handle FastAPI HTTPException details
+            if isinstance(detail, list) and len(detail) > 0:
+                return " | ".join([d.get('msg', str(d)) for d in detail])
+            return str(detail)
+        elif 'message' in response:
+            return response['message']
+        elif 'msg' in response:
+            return response['msg']
+        
+        # Try to extract from nested structures
+        if 'data' in response and isinstance(response['data'], dict):
+            if 'error' in response['data']:
+                return response['data']['error']
+        
+        # If response has status code
+        if 'status_code' in response:
+            return f"HTTP {response['status_code']}: {response.get('reason', 'Request failed')}"
+    
+    # Handle string responses
+    elif isinstance(response, str):
+        return response
+    
+    # Default fallback
+    return "Unknown error occurred. Check server logs for details."
+
+
+def format_error_details(response: Dict[str, Any], include_debug: bool = True) -> str:
+    """Format detailed error information for display."""
+    error_msg = extract_error_message(response)
+    
+    # Build detailed error display
+    details = []
+    details.append(f"**Error:** {error_msg}")
+    
+    if include_debug and isinstance(response, dict):
+        # Add status code if available
+        if 'status_code' in response:
+            details.append(f"**Status Code:** {response['status_code']}")
+        
+        # Add timestamp if available
+        if 'timestamp' in response:
+            details.append(f"**Timestamp:** {format_timestamp(response['timestamp'])}")
+        
+        # Add request ID if available
+        if 'request_id' in response:
+            details.append(f"**Request ID:** {response['request_id']}")
+        
+        # Add service information if available
+        if 'service' in response:
+            details.append(f"**Service:** {response['service']}")
+        
+        # Add traceback if available (truncated)
+        if 'traceback' in response:
+            tb = response['traceback']
+            if isinstance(tb, str):
+                # Show only last few lines of traceback
+                tb_lines = tb.split('\n')
+                if len(tb_lines) > 5:
+                    tb = '\n'.join(tb_lines[-5:])
+                details.append(f"**Debug Info:**\n```\n{tb}\n```")
+    
+    return '\n\n'.join(details)
 
 
 def is_success_response(response: Dict[str, Any]) -> bool:

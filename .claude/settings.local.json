@@ -37,7 +37,17 @@
       "Bash(pip install:*)",
       "WebFetch(domain:google.github.io)",
       "Bash(uvicorn:*)",
-      "Bash(timeout:*)"
+      "Bash(timeout:*)",
+      "Bash(docker images:*)",
+      "Bash(docker image prune:*)",
+      "Bash(source:*)",
+      "Bash(..venvScriptsactivate)",
+      "Bash(uv run:*)",
+      "Bash(docker stats:*)",
+      "Bash(docker build:*)",
+      "Bash(docker tag:*)",
+      "Bash(wsl:*)",
+      "Bash(docker network prune:*)"
     ],
     "deny": []
   }

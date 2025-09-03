@@ -7,7 +7,7 @@ from nicegui import ui
 from ..components.navigation import Navigation
 from ..components.service_card import create_services_grid
 from ..utils.api_client import api_client
-from ..utils.helpers import is_success_response
+from ..utils.helpers import is_success_response, format_error_details
 
 
 def create_dashboard_page():
@@ -68,4 +68,12 @@ def create_dashboard_page():
                         ui.icon(icon, size='sm').classes(f'text-{color}')
                         ui.label(f'{service.title()}: {service_status}').classes('text-caption')
         else:
-            ui.notify('Failed to check health status', color='negative')
+            # Show detailed error information
+            error_details = format_error_details(result)
+            ui.notify(f'Health check failed: {error_details}', color='negative')
+            
+            # Update status display with error
+            status_container.clear()
+            with status_container:
+                ui.label('❌ Health Check Failed').classes('text-negative text-subtitle1')
+                ui.label(error_details).classes('text-caption text-grey-7')

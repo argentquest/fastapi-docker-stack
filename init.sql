@@ -2,7 +2,18 @@
 -- This script is executed automatically by Docker on the first startup of the PostgreSQL container.
 -- It sets up the necessary database schema, extensions, tables, indexes, and initial data.
 
--- Section 1: Extensions
+-- Section 1: Database Creation
+-- -----------------------------
+
+-- Create additional databases required by different environments
+CREATE DATABASE poc_dev;
+CREATE DATABASE poc_prod;
+CREATE DATABASE poc_db;
+
+-- Connect to each database and set up extensions and schema
+\c poc_local;
+
+-- Section 2: Extensions
 -- -------------------------
 
 -- Enable the pgvector extension, which is required for storing and searching vector embeddings.
@@ -194,9 +205,484 @@ $$ LANGUAGE plpgsql;
 -- Grant all necessary permissions to the application user (`pocuser`).
 -- This ensures the FastAPI application can read, write, and execute functions.
 GRANT ALL PRIVILEGES ON DATABASE poc_local TO pocuser;
+GRANT ALL PRIVILEGES ON DATABASE poc_dev TO pocuser;
+GRANT ALL PRIVILEGES ON DATABASE poc_prod TO pocuser;
+GRANT ALL PRIVILEGES ON DATABASE poc_db TO pocuser;
 GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO pocuser;
 GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO pocuser;
 GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO pocuser;
+
+-- Set up schema for poc_dev database
+\c poc_dev;
+CREATE EXTENSION IF NOT EXISTS vector;
+
+-- Create tables for poc_dev
+CREATE TABLE IF NOT EXISTS ai_test_logs (
+    id SERIAL PRIMARY KEY,
+    system_prompt TEXT NOT NULL,
+    user_context TEXT NOT NULL,
+    ai_result TEXT NOT NULL,
+    embedding vector(1024),
+    file_url TEXT,
+    response_time_ms INTEGER,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS users (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    last_login TIMESTAMP WITH TIME ZONE
+);
+
+CREATE TABLE IF NOT EXISTS stories (
+    id SERIAL PRIMARY KEY,
+    title VARCHAR(200) NOT NULL,
+    author_id INTEGER REFERENCES users(id),
+    content TEXT,
+    genre VARCHAR(50),
+    status VARCHAR(20) DEFAULT 'draft',
+    word_count INTEGER DEFAULT 0,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS world_elements (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    element_type VARCHAR(20) NOT NULL,
+    description TEXT,
+    properties JSONB,
+    embedding vector(1024),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create indexes for poc_dev
+CREATE INDEX IF NOT EXISTS idx_ai_test_logs_created_at ON ai_test_logs (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_ai_test_logs_response_time ON ai_test_logs (response_time_ms);
+CREATE INDEX IF NOT EXISTS idx_ai_test_logs_embedding ON ai_test_logs USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100);
+
+-- Insert test data for poc_dev
+INSERT INTO users (username, email, password_hash) VALUES 
+    ('testuser1', 'test1@example.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj7Gm7qJ5u7e'),
+    ('testuser2', 'test2@example.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj7Gm7qJ5u7e'),
+    ('admin', 'admin@example.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj7Gm7qJ5u7e'),
+    ('writer1', 'writer1@example.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj7Gm7qJ5u7e'),
+    ('writer2', 'writer2@example.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj7Gm7qJ5u7e')
+ON CONFLICT (username) DO NOTHING;
+
+INSERT INTO stories (title, author_id, content, genre, status, word_count) VALUES 
+    ('The Dragon''s Quest', 1, 'In the mystical realm of Aethermoor, a young dragon named Zephyr embarked on a perilous journey to save his homeland from an ancient curse. The crystal caves echoed with his roar as he gathered courage for the trials ahead.', 'fantasy', 'published', 245),
+    ('Cyber Shadows', 2, 'In Neo-Tokyo 2087, hacker Maya Chen discovered a conspiracy that reached the highest levels of the corporate oligarchy. Her fingers danced across holographic keyboards as she infiltrated secure networks.', 'cyberpunk', 'draft', 189),
+    ('The Time Merchant', 3, 'Professor Elias Blackwood had discovered the secret to temporal manipulation, but every transaction came with a price. His shop existed in the space between seconds, serving customers from across history.', 'sci-fi', 'published', 312),
+    ('Whispers in the Wind', 1, 'The old lighthouse keeper knew the secrets that the ocean held. Every night, he would listen to the waves and decode the messages they carried from distant shores.', 'mystery', 'draft', 167),
+    ('The Last Library', 4, 'In a post-apocalyptic world where books were forbidden, Librarian Sarah Martinez protected the last repository of human knowledge hidden beneath the ruins of civilization.', 'dystopian', 'published', 298)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO world_elements (name, element_type, description, properties) VALUES 
+    ('Zephyr', 'character', 'A young sapphire dragon with silver-tipped scales and the rare ability to control wind currents. Born in the Crystal Peaks, he possesses an ancient bloodline connected to the Air Elementals.', '{"age": 127, "species": "Wind Dragon", "abilities": ["Wind Control", "Flight", "Crystal Sight"], "location": "Crystal Peaks"}'),
+    ('Crystal Peaks', 'location', 'A mountain range of living crystal formations that amplify magical energies. The peaks change color with the seasons and are home to ancient dragon clans. Hidden caves contain powerful artifacts.', '{"climate": "Temperate Magical", "hazards": ["Crystal Storms", "Magic Surges"], "resources": ["Power Crystals", "Rare Minerals"], "inhabitants": ["Dragons", "Crystal Sprites"]}'),
+    ('The Great Sundering', 'lore', 'An ancient cataclysm that shattered the world into floating islands connected by bridges of solidified starlight. This event separated the elemental realms and created the current magical geography.', '{"date": "Age of Stars, Year 0", "cause": "Elemental War", "effects": ["Floating Islands", "Starlight Bridges", "Elemental Separation"], "survivors": ["Dragon Clans", "Elemental Spirits"]}'),
+    ('Maya Chen', 'character', 'Elite netrunner and former corporate security specialist turned underground hacker. Known for her signature ice-blue cybernetic eyes and ability to navigate the most secure networks.', '{"age": 28, "profession": "Netrunner", "skills": ["Ice Breaking", "Data Mining", "Stealth Ops"], "equipment": ["Neural Interface", "Quantum Deck", "Proxy Ghosts"]}'),
+    ('Neo-Tokyo Undercity', 'location', 'A sprawling network of tunnels and abandoned subway systems beneath Neo-Tokyo. Illuminated by neon signs and inhabited by hackers, outcasts, and rogue AIs seeking freedom from corporate control.', '{"population": 50000, "districts": ["Data Haven", "Neon Bazaar", "Ghost Sector"], "access": "Hidden Entrances", "security": "Minimal"}'),
+    ('The Blackwood Paradox', 'lore', 'A temporal theory stating that changing the past creates parallel timelines rather than altering the original. Professor Blackwood''s experiments proved this theory, revolutionizing understanding of time travel.', '{"discoverer": "Professor Elias Blackwood", "year_discovered": 2156, "implications": ["Parallel Timelines", "Temporal Safety", "Causality Protection"], "applications": ["Time Tourism", "Historical Research", "Temporal Trade"]}')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO ai_test_logs (system_prompt, user_context, ai_result, response_time_ms)
+VALUES 
+    ('You are a helpful assistant.', 
+     'Hello, this is a test message.', 
+     'Hello! I''m here to help you. This is a test response from the V2 POC system.',
+     1250),
+    ('You are a creative storyteller.',
+     'Write a short story about a dragon.',
+     'Once upon a time, in a land far away, there lived a wise dragon named Ember who protected a village of kind-hearted people...',
+     2100),
+    ('You are a technical expert.',
+     'Explain how vector databases work.',
+     'Vector databases store high-dimensional vectors and enable similarity search through mathematical operations like cosine similarity...',
+     1875),
+    ('You are a world-building assistant.',
+     'Describe a magical crystal cave system.',
+     'The Crystal Peaks rise majestically above the clouds, their faceted surfaces catching and refracting light into spectacular aurora displays. Deep within these living mountains, vast caverns pulse with elemental energy.',
+     2340),
+    ('You are a cyberpunk narrator.',
+     'Describe a hacker''s workspace in the undercity.',
+     'Maya''s data fortress occupies a forgotten maintenance tunnel, walls lined with salvaged screens casting blue light on her face. Fiber optic cables snake across the ceiling like digital vines.',
+     1890),
+    ('You are a sci-fi consultant.',
+     'Explain the implications of time travel.',
+     'The Blackwood Paradox suggests that temporal manipulation creates branching realities rather than changing our timeline. This prevents grandfather paradoxes but raises questions about parallel universe ethics.',
+     2650)
+ON CONFLICT DO NOTHING;
+
+-- Set up schema for poc_prod database  
+\c poc_prod;
+CREATE EXTENSION IF NOT EXISTS vector;
+
+-- Create tables for poc_prod
+CREATE TABLE IF NOT EXISTS ai_test_logs (
+    id SERIAL PRIMARY KEY,
+    system_prompt TEXT NOT NULL,
+    user_context TEXT NOT NULL,
+    ai_result TEXT NOT NULL,
+    embedding vector(1024),
+    file_url TEXT,
+    response_time_ms INTEGER,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS users (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    last_login TIMESTAMP WITH TIME ZONE
+);
+
+CREATE TABLE IF NOT EXISTS stories (
+    id SERIAL PRIMARY KEY,
+    title VARCHAR(200) NOT NULL,
+    author_id INTEGER REFERENCES users(id),
+    content TEXT,
+    genre VARCHAR(50),
+    status VARCHAR(20) DEFAULT 'draft',
+    word_count INTEGER DEFAULT 0,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS world_elements (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    element_type VARCHAR(20) NOT NULL,
+    description TEXT,
+    properties JSONB,
+    embedding vector(1024),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create indexes for poc_prod
+CREATE INDEX IF NOT EXISTS idx_ai_test_logs_created_at ON ai_test_logs (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_ai_test_logs_response_time ON ai_test_logs (response_time_ms);
+CREATE INDEX IF NOT EXISTS idx_ai_test_logs_embedding ON ai_test_logs USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100);
+
+-- Insert test data for poc_prod
+INSERT INTO users (username, email, password_hash) VALUES 
+    ('testuser1', 'test1@example.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj7Gm7qJ5u7e'),
+    ('testuser2', 'test2@example.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj7Gm7qJ5u7e'),
+    ('admin', 'admin@example.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj7Gm7qJ5u7e'),
+    ('writer1', 'writer1@example.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj7Gm7qJ5u7e'),
+    ('writer2', 'writer2@example.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj7Gm7qJ5u7e')
+ON CONFLICT (username) DO NOTHING;
+
+INSERT INTO stories (title, author_id, content, genre, status, word_count) VALUES 
+    ('The Dragon''s Quest', 1, 'In the mystical realm of Aethermoor, a young dragon named Zephyr embarked on a perilous journey to save his homeland from an ancient curse. The crystal caves echoed with his roar as he gathered courage for the trials ahead.', 'fantasy', 'published', 245),
+    ('Cyber Shadows', 2, 'In Neo-Tokyo 2087, hacker Maya Chen discovered a conspiracy that reached the highest levels of the corporate oligarchy. Her fingers danced across holographic keyboards as she infiltrated secure networks.', 'cyberpunk', 'draft', 189),
+    ('The Time Merchant', 3, 'Professor Elias Blackwood had discovered the secret to temporal manipulation, but every transaction came with a price. His shop existed in the space between seconds, serving customers from across history.', 'sci-fi', 'published', 312),
+    ('Whispers in the Wind', 1, 'The old lighthouse keeper knew the secrets that the ocean held. Every night, he would listen to the waves and decode the messages they carried from distant shores.', 'mystery', 'draft', 167),
+    ('The Last Library', 4, 'In a post-apocalyptic world where books were forbidden, Librarian Sarah Martinez protected the last repository of human knowledge hidden beneath the ruins of civilization.', 'dystopian', 'published', 298)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO world_elements (name, element_type, description, properties) VALUES 
+    ('Zephyr', 'character', 'A young sapphire dragon with silver-tipped scales and the rare ability to control wind currents. Born in the Crystal Peaks, he possesses an ancient bloodline connected to the Air Elementals.', '{"age": 127, "species": "Wind Dragon", "abilities": ["Wind Control", "Flight", "Crystal Sight"], "location": "Crystal Peaks"}'),
+    ('Crystal Peaks', 'location', 'A mountain range of living crystal formations that amplify magical energies. The peaks change color with the seasons and are home to ancient dragon clans. Hidden caves contain powerful artifacts.', '{"climate": "Temperate Magical", "hazards": ["Crystal Storms", "Magic Surges"], "resources": ["Power Crystals", "Rare Minerals"], "inhabitants": ["Dragons", "Crystal Sprites"]}'),
+    ('The Great Sundering', 'lore', 'An ancient cataclysm that shattered the world into floating islands connected by bridges of solidified starlight. This event separated the elemental realms and created the current magical geography.', '{"date": "Age of Stars, Year 0", "cause": "Elemental War", "effects": ["Floating Islands", "Starlight Bridges", "Elemental Separation"], "survivors": ["Dragon Clans", "Elemental Spirits"]}'),
+    ('Maya Chen', 'character', 'Elite netrunner and former corporate security specialist turned underground hacker. Known for her signature ice-blue cybernetic eyes and ability to navigate the most secure networks.', '{"age": 28, "profession": "Netrunner", "skills": ["Ice Breaking", "Data Mining", "Stealth Ops"], "equipment": ["Neural Interface", "Quantum Deck", "Proxy Ghosts"]}'),
+    ('Neo-Tokyo Undercity', 'location', 'A sprawling network of tunnels and abandoned subway systems beneath Neo-Tokyo. Illuminated by neon signs and inhabited by hackers, outcasts, and rogue AIs seeking freedom from corporate control.', '{"population": 50000, "districts": ["Data Haven", "Neon Bazaar", "Ghost Sector"], "access": "Hidden Entrances", "security": "Minimal"}'),
+    ('The Blackwood Paradox', 'lore', 'A temporal theory stating that changing the past creates parallel timelines rather than altering the original. Professor Blackwood''s experiments proved this theory, revolutionizing understanding of time travel.', '{"discoverer": "Professor Elias Blackwood", "year_discovered": 2156, "implications": ["Parallel Timelines", "Temporal Safety", "Causality Protection"], "applications": ["Time Tourism", "Historical Research", "Temporal Trade"]}')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO ai_test_logs (system_prompt, user_context, ai_result, response_time_ms)
+VALUES 
+    ('You are a helpful assistant.', 
+     'Hello, this is a test message.', 
+     'Hello! I''m here to help you. This is a test response from the V2 POC system.',
+     1250),
+    ('You are a creative storyteller.',
+     'Write a short story about a dragon.',
+     'Once upon a time, in a land far away, there lived a wise dragon named Ember who protected a village of kind-hearted people...',
+     2100),
+    ('You are a technical expert.',
+     'Explain how vector databases work.',
+     'Vector databases store high-dimensional vectors and enable similarity search through mathematical operations like cosine similarity...',
+     1875),
+    ('You are a world-building assistant.',
+     'Describe a magical crystal cave system.',
+     'The Crystal Peaks rise majestically above the clouds, their faceted surfaces catching and refracting light into spectacular aurora displays. Deep within these living mountains, vast caverns pulse with elemental energy.',
+     2340),
+    ('You are a cyberpunk narrator.',
+     'Describe a hacker''s workspace in the undercity.',
+     'Maya''s data fortress occupies a forgotten maintenance tunnel, walls lined with salvaged screens casting blue light on her face. Fiber optic cables snake across the ceiling like digital vines.',
+     1890),
+    ('You are a sci-fi consultant.',
+     'Explain the implications of time travel.',
+     'The Blackwood Paradox suggests that temporal manipulation creates branching realities rather than changing our timeline. This prevents grandfather paradoxes but raises questions about parallel universe ethics.',
+     2650)
+ON CONFLICT DO NOTHING;
+
+-- Set up schema for poc_db database
+\c poc_db;
+CREATE EXTENSION IF NOT EXISTS vector;
+
+-- Create tables for poc_db
+CREATE TABLE IF NOT EXISTS ai_test_logs (
+    id SERIAL PRIMARY KEY,
+    system_prompt TEXT NOT NULL,
+    user_context TEXT NOT NULL,
+    ai_result TEXT NOT NULL,
+    embedding vector(1024),
+    file_url TEXT,
+    response_time_ms INTEGER,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS users (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    last_login TIMESTAMP WITH TIME ZONE
+);
+
+CREATE TABLE IF NOT EXISTS stories (
+    id SERIAL PRIMARY KEY,
+    title VARCHAR(200) NOT NULL,
+    author_id INTEGER REFERENCES users(id),
+    content TEXT,
+    genre VARCHAR(50),
+    status VARCHAR(20) DEFAULT 'draft',
+    word_count INTEGER DEFAULT 0,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS world_elements (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    element_type VARCHAR(20) NOT NULL,
+    description TEXT,
+    properties JSONB,
+    embedding vector(1024),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create indexes for poc_db
+CREATE INDEX IF NOT EXISTS idx_ai_test_logs_created_at ON ai_test_logs (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_ai_test_logs_response_time ON ai_test_logs (response_time_ms);
+CREATE INDEX IF NOT EXISTS idx_ai_test_logs_embedding ON ai_test_logs USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100);
+
+-- Insert test data for poc_db
+INSERT INTO users (username, email, password_hash) VALUES 
+    ('testuser1', 'test1@example.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj7Gm7qJ5u7e'),
+    ('testuser2', 'test2@example.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj7Gm7qJ5u7e'),
+    ('admin', 'admin@example.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj7Gm7qJ5u7e'),
+    ('writer1', 'writer1@example.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj7Gm7qJ5u7e'),
+    ('writer2', 'writer2@example.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj7Gm7qJ5u7e')
+ON CONFLICT (username) DO NOTHING;
+
+INSERT INTO stories (title, author_id, content, genre, status, word_count) VALUES 
+    ('The Dragon''s Quest', 1, 'In the mystical realm of Aethermoor, a young dragon named Zephyr embarked on a perilous journey to save his homeland from an ancient curse. The crystal caves echoed with his roar as he gathered courage for the trials ahead.', 'fantasy', 'published', 245),
+    ('Cyber Shadows', 2, 'In Neo-Tokyo 2087, hacker Maya Chen discovered a conspiracy that reached the highest levels of the corporate oligarchy. Her fingers danced across holographic keyboards as she infiltrated secure networks.', 'cyberpunk', 'draft', 189),
+    ('The Time Merchant', 3, 'Professor Elias Blackwood had discovered the secret to temporal manipulation, but every transaction came with a price. His shop existed in the space between seconds, serving customers from across history.', 'sci-fi', 'published', 312),
+    ('Whispers in the Wind', 1, 'The old lighthouse keeper knew the secrets that the ocean held. Every night, he would listen to the waves and decode the messages they carried from distant shores.', 'mystery', 'draft', 167),
+    ('The Last Library', 4, 'In a post-apocalyptic world where books were forbidden, Librarian Sarah Martinez protected the last repository of human knowledge hidden beneath the ruins of civilization.', 'dystopian', 'published', 298)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO world_elements (name, element_type, description, properties) VALUES 
+    ('Zephyr', 'character', 'A young sapphire dragon with silver-tipped scales and the rare ability to control wind currents. Born in the Crystal Peaks, he possesses an ancient bloodline connected to the Air Elementals.', '{"age": 127, "species": "Wind Dragon", "abilities": ["Wind Control", "Flight", "Crystal Sight"], "location": "Crystal Peaks"}'),
+    ('Crystal Peaks', 'location', 'A mountain range of living crystal formations that amplify magical energies. The peaks change color with the seasons and are home to ancient dragon clans. Hidden caves contain powerful artifacts.', '{"climate": "Temperate Magical", "hazards": ["Crystal Storms", "Magic Surges"], "resources": ["Power Crystals", "Rare Minerals"], "inhabitants": ["Dragons", "Crystal Sprites"]}'),
+    ('The Great Sundering', 'lore', 'An ancient cataclysm that shattered the world into floating islands connected by bridges of solidified starlight. This event separated the elemental realms and created the current magical geography.', '{"date": "Age of Stars, Year 0", "cause": "Elemental War", "effects": ["Floating Islands", "Starlight Bridges", "Elemental Separation"], "survivors": ["Dragon Clans", "Elemental Spirits"]}'),
+    ('Maya Chen', 'character', 'Elite netrunner and former corporate security specialist turned underground hacker. Known for her signature ice-blue cybernetic eyes and ability to navigate the most secure networks.', '{"age": 28, "profession": "Netrunner", "skills": ["Ice Breaking", "Data Mining", "Stealth Ops"], "equipment": ["Neural Interface", "Quantum Deck", "Proxy Ghosts"]}'),
+    ('Neo-Tokyo Undercity', 'location', 'A sprawling network of tunnels and abandoned subway systems beneath Neo-Tokyo. Illuminated by neon signs and inhabited by hackers, outcasts, and rogue AIs seeking freedom from corporate control.', '{"population": 50000, "districts": ["Data Haven", "Neon Bazaar", "Ghost Sector"], "access": "Hidden Entrances", "security": "Minimal"}'),
+    ('The Blackwood Paradox', 'lore', 'A temporal theory stating that changing the past creates parallel timelines rather than altering the original. Professor Blackwood''s experiments proved this theory, revolutionizing understanding of time travel.', '{"discoverer": "Professor Elias Blackwood", "year_discovered": 2156, "implications": ["Parallel Timelines", "Temporal Safety", "Causality Protection"], "applications": ["Time Tourism", "Historical Research", "Temporal Trade"]}')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO ai_test_logs (system_prompt, user_context, ai_result, response_time_ms)
+VALUES 
+    ('You are a helpful assistant.', 
+     'Hello, this is a test message.', 
+     'Hello! I''m here to help you. This is a test response from the V2 POC system.',
+     1250),
+    ('You are a creative storyteller.',
+     'Write a short story about a dragon.',
+     'Once upon a time, in a land far away, there lived a wise dragon named Ember who protected a village of kind-hearted people...',
+     2100),
+    ('You are a technical expert.',
+     'Explain how vector databases work.',
+     'Vector databases store high-dimensional vectors and enable similarity search through mathematical operations like cosine similarity...',
+     1875),
+    ('You are a world-building assistant.',
+     'Describe a magical crystal cave system.',
+     'The Crystal Peaks rise majestically above the clouds, their faceted surfaces catching and refracting light into spectacular aurora displays. Deep within these living mountains, vast caverns pulse with elemental energy.',
+     2340),
+    ('You are a cyberpunk narrator.',
+     'Describe a hacker''s workspace in the undercity.',
+     'Maya''s data fortress occupies a forgotten maintenance tunnel, walls lined with salvaged screens casting blue light on her face. Fiber optic cables snake across the ceiling like digital vines.',
+     1890),
+    ('You are a sci-fi consultant.',
+     'Explain the implications of time travel.',
+     'The Blackwood Paradox suggests that temporal manipulation creates branching realities rather than changing our timeline. This prevents grandfather paradoxes but raises questions about parallel universe ethics.',
+     2650)
+ON CONFLICT DO NOTHING;
+
+-- Return to poc_local for final permissions
+\c poc_local;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO pocuser;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO pocuser;
+GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO pocuser;
+
+-- Grant permissions for other databases
+\c poc_dev;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO pocuser;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO pocuser;
+GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO pocuser;
+
+\c poc_prod;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO pocuser;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO pocuser;
+GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO pocuser;
+
+\c poc_db;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO pocuser;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO pocuser;
+GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO pocuser;
+
+-- Add stored procedures/functions for poc_dev
+\c poc_dev;
+CREATE OR REPLACE FUNCTION cleanup_old_ai_logs(days_to_keep INTEGER DEFAULT 30)
+RETURNS INTEGER AS $$
+DECLARE
+    deleted_count INTEGER;
+BEGIN
+    DELETE FROM ai_test_logs 
+    WHERE created_at < NOW() - make_interval(days => days_to_keep);
+    
+    GET DIAGNOSTICS deleted_count = ROW_COUNT;
+    
+    RETURN deleted_count;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION get_embedding_stats()
+RETURNS TABLE(
+    total_embeddings BIGINT,
+    avg_similarity NUMERIC,
+    min_similarity NUMERIC,
+    max_similarity NUMERIC
+) AS $$
+BEGIN
+    RETURN QUERY
+    WITH similarity_matrix AS (
+        SELECT 
+            1 - (a.embedding <=> b.embedding) as similarity
+        FROM ai_test_logs a
+        CROSS JOIN ai_test_logs b
+        WHERE a.id < b.id
+        AND a.embedding IS NOT NULL 
+        AND b.embedding IS NOT NULL
+    )
+    SELECT 
+        (SELECT COUNT(*) FROM ai_test_logs WHERE embedding IS NOT NULL) as total_embeddings,
+        ROUND(AVG(similarity), 4) as avg_similarity,
+        ROUND(MIN(similarity), 4) as min_similarity,
+        ROUND(MAX(similarity), 4) as max_similarity
+    FROM similarity_matrix;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Add stored procedures/functions for poc_prod
+\c poc_prod;
+CREATE OR REPLACE FUNCTION cleanup_old_ai_logs(days_to_keep INTEGER DEFAULT 30)
+RETURNS INTEGER AS $$
+DECLARE
+    deleted_count INTEGER;
+BEGIN
+    DELETE FROM ai_test_logs 
+    WHERE created_at < NOW() - make_interval(days => days_to_keep);
+    
+    GET DIAGNOSTICS deleted_count = ROW_COUNT;
+    
+    RETURN deleted_count;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION get_embedding_stats()
+RETURNS TABLE(
+    total_embeddings BIGINT,
+    avg_similarity NUMERIC,
+    min_similarity NUMERIC,
+    max_similarity NUMERIC
+) AS $$
+BEGIN
+    RETURN QUERY
+    WITH similarity_matrix AS (
+        SELECT 
+            1 - (a.embedding <=> b.embedding) as similarity
+        FROM ai_test_logs a
+        CROSS JOIN ai_test_logs b
+        WHERE a.id < b.id
+        AND a.embedding IS NOT NULL 
+        AND b.embedding IS NOT NULL
+    )
+    SELECT 
+        (SELECT COUNT(*) FROM ai_test_logs WHERE embedding IS NOT NULL) as total_embeddings,
+        ROUND(AVG(similarity), 4) as avg_similarity,
+        ROUND(MIN(similarity), 4) as min_similarity,
+        ROUND(MAX(similarity), 4) as max_similarity
+    FROM similarity_matrix;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Add stored procedures/functions for poc_db
+\c poc_db;
+CREATE OR REPLACE FUNCTION cleanup_old_ai_logs(days_to_keep INTEGER DEFAULT 30)
+RETURNS INTEGER AS $$
+DECLARE
+    deleted_count INTEGER;
+BEGIN
+    DELETE FROM ai_test_logs 
+    WHERE created_at < NOW() - make_interval(days => days_to_keep);
+    
+    GET DIAGNOSTICS deleted_count = ROW_COUNT;
+    
+    RETURN deleted_count;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION get_embedding_stats()
+RETURNS TABLE(
+    total_embeddings BIGINT,
+    avg_similarity NUMERIC,
+    min_similarity NUMERIC,
+    max_similarity NUMERIC
+) AS $$
+BEGIN
+    RETURN QUERY
+    WITH similarity_matrix AS (
+        SELECT 
+            1 - (a.embedding <=> b.embedding) as similarity
+        FROM ai_test_logs a
+        CROSS JOIN ai_test_logs b
+        WHERE a.id < b.id
+        AND a.embedding IS NOT NULL 
+        AND b.embedding IS NOT NULL
+    )
+    SELECT 
+        (SELECT COUNT(*) FROM ai_test_logs WHERE embedding IS NOT NULL) as total_embeddings,
+        ROUND(AVG(similarity), 4) as avg_similarity,
+        ROUND(MIN(similarity), 4) as min_similarity,
+        ROUND(MAX(similarity), 4) as max_similarity
+    FROM similarity_matrix;
+END;
+$$ LANGUAGE plpgsql;
 
 
 -- Section 7: Logging

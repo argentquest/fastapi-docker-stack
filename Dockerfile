@@ -26,9 +26,11 @@ FROM python:3.11-slim
 
 # Install system dependencies required by libraries like psycopg2 (for PostgreSQL).
 # libpq5 is the PostgreSQL C client library.
+# curl is needed for health checks in Docker containers.
 # Set DEBIAN_FRONTEND to avoid interactive prompts during build
 RUN DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install -y \
     libpq5 \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy the uv binary from the official image again.

@@ -7,7 +7,7 @@ from nicegui import ui
 from ..components.navigation import Navigation
 from ..components.service_card import create_services_grid
 from ..utils.api_client import api_client
-from ..utils.helpers import is_success_response
+from ..utils.helpers import is_success_response, format_error_details
 
 
 def create_health_page():
@@ -77,14 +77,15 @@ def create_health_page():
                         ui.label("No service data available").classes('text-grey-7')
                 
             else:
+                error_details = format_error_details(response)
                 overall_status.text = "❌ Health Check Failed"
                 overall_status.classes('text-negative')
-                status_summary.text = "Unable to retrieve service status"
+                status_summary.text = f"Error: {error_details}"
                 
         except Exception as e:
             overall_status.text = "❌ Connection Failed"
             overall_status.classes('text-negative')
-            status_summary.text = f"Error: {str(e)}"
+            status_summary.text = f"Connection Error: {type(e).__name__} - {str(e)}"
         
         finally:
             refresh_btn.props('loading=false')
@@ -138,14 +139,15 @@ def create_health_page():
                 if response.get('status') == 'success':
                     ui.notify("✅ Google AI is working!", type='positive')
                 else:
-                    ui.notify(f"❌ Google AI failed: {response.get('message', 'Unknown error')}", type='negative')
+                    error_details = format_error_details(response)
+                    ui.notify(f"❌ Google AI failed: {error_details}", type='negative')
             else:
                 # For other services, refresh the main health check
                 await refresh_health()
                 ui.notify(f"Health check refreshed for {service_name}")
                 
         except Exception as e:
-            ui.notify(f"❌ Error testing {service_name}: {str(e)}", type='negative')
+            ui.notify(f"❌ Error testing {service_name}: {type(e).__name__} - {str(e)}", type='negative')
     
     # Initial load
     ui.timer(0.1, refresh_health, once=True)

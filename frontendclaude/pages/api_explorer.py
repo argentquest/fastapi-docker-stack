@@ -5,7 +5,7 @@ Generic API endpoint testing interface.
 
 from nicegui import ui
 from ..components.navigation import Navigation
-from ..utils.helpers import format_json
+from ..utils.helpers import format_json, format_error_details
 import httpx
 import json
 
@@ -152,10 +152,15 @@ def create_api_explorer_page():
             response_status.text = f"Status: {status_code} {response.reason_phrase}"
             response_status.classes(f'text-{status_color}')
             
-            # Response body
+            # Response body with enhanced error details for error responses
             try:
                 response_json = response.json()
-                response_body.value = format_json(response_json)
+                if status_code >= 400:
+                    # For error responses, show formatted error details
+                    error_details = format_error_details(response_json)
+                    response_body.value = f"Error Details:\n\n{error_details}\n\nRaw Response:\n{format_json(response_json)}"
+                else:
+                    response_body.value = format_json(response_json)
             except:
                 response_body.value = response.text
             
@@ -166,7 +171,7 @@ def create_api_explorer_page():
         except httpx.TimeoutException:
             response_status.text = "❌ Request timeout"
             response_status.classes('text-negative')
-            response_body.value = "Request timed out after 60 seconds"
+            response_body.value = "Request timed out after 60 seconds. The server may be overloaded or unresponsive."
             
         except httpx.ConnectError:
             response_status.text = "❌ Connection failed"

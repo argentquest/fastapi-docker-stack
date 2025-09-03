@@ -6,7 +6,7 @@ Interactive testing interface for all AI endpoints.
 from nicegui import ui
 from ..components.navigation import Navigation
 from ..utils.api_client import api_client
-from ..utils.helpers import is_success_response, format_response_time, extract_error_message
+from ..utils.helpers import is_success_response, format_response_time, extract_error_message, format_error_details, format_json
 
 
 def create_ai_test_page():
@@ -89,11 +89,26 @@ def create_ai_test_page():
                                        color=color).classes('q-mr-xs')
                     
                     else:
-                        error_msg = extract_error_message(response)
-                        result_area.content = f"## ❌ Test Failed\n\n{error_msg}"
+                        error_details = format_error_details(response)
+                        result_area.content = f"## ❌ Test Failed\n\n{error_details}"
+                        
+                        # Also show raw response in debug mode
+                        metrics_area.clear()
+                        with metrics_area:
+                            with ui.expansion("Show Raw Response", icon='bug_report').classes('w-full'):
+                                ui.code(format_json(response), language='json').classes('w-full')
                         
                 except Exception as e:
-                    result_area.content = f"## ❌ Connection Error\n\n{str(e)}"
+                    result_area.content = f"""## ❌ Connection Error
+
+**Error Type:** {type(e).__name__}
+
+**Details:** {str(e)}
+
+**Troubleshooting:**
+- Check if the backend server is running
+- Verify the API endpoint is accessible
+- Check network connectivity"""
                 
                 finally:
                     test_btn.props('loading=false')
@@ -134,13 +149,13 @@ def create_ai_test_page():
 **Test Response:** {response.get('test_response', 'No response')}
                         """
                     else:
-                        google_result.content = f"""
-## ❌ Connection Failed
-
-{response.get('message', 'Unknown error')}
-                        """
+                        error_details = format_error_details(response)
+                        google_result.content = f"## ❌ Connection Failed\n\n{error_details}"
                 except Exception as e:
-                    google_result.content = f"## ❌ Error\n\n{str(e)}"
+                    google_result.content = f"""## ❌ Connection Error
+
+**Error Type:** {type(e).__name__}
+**Details:** {str(e)}"""
             
             async def test_google_ai():
                 """Send prompt to Google AI."""
@@ -161,11 +176,14 @@ def create_ai_test_page():
 **Response Time:** {format_response_time(response.get('response_time_ms', 0))}
                         """
                     else:
-                        error_msg = extract_error_message(response)
-                        google_result.content = f"## ❌ Error\n\n{error_msg}"
+                        error_details = format_error_details(response)
+                        google_result.content = f"## ❌ Error\n\n{error_details}"
                         
                 except Exception as e:
-                    google_result.content = f"## ❌ Connection Error\n\n{str(e)}"
+                    google_result.content = f"""## ❌ Connection Error
+
+**Error Type:** {type(e).__name__}
+**Details:** {str(e)}"""
                 
                 finally:
                     google_btn.props('loading=false')
@@ -210,13 +228,13 @@ def create_ai_test_page():
 **Test Response:** {response.get('test_response', 'No response')}
                         """
                     else:
-                        adk_result.content = f"""
-## ❌ Connection Failed
-
-{response.get('message', 'Unknown error')}
-                        """
+                        error_details = format_error_details(response)
+                        adk_result.content = f"## ❌ Connection Failed\n\n{error_details}"
                 except Exception as e:
-                    adk_result.content = f"## ❌ Error\n\n{str(e)}"
+                    adk_result.content = f"""## ❌ Connection Error
+
+**Error Type:** {type(e).__name__}
+**Details:** {str(e)}"""
             
             async def test_google_adk():
                 """Send prompt to Google ADK Agent."""
@@ -239,11 +257,14 @@ def create_ai_test_page():
 *This response was generated using Google's Agent Development Kit framework*
                         """
                     else:
-                        error_msg = extract_error_message(response)
-                        adk_result.content = f"## ❌ Error\n\n{error_msg}"
+                        error_details = format_error_details(response)
+                        adk_result.content = f"## ❌ Error\n\n{error_details}"
                         
                 except Exception as e:
-                    adk_result.content = f"## ❌ Connection Error\n\n{str(e)}"
+                    adk_result.content = f"""## ❌ Connection Error
+
+**Error Type:** {type(e).__name__}
+**Details:** {str(e)}"""
                 
                 finally:
                     adk_btn.props('loading=false')
@@ -295,8 +316,20 @@ def create_ai_test_page():
 **Response Time:** {format_response_time(response.get('response_time_ms', 0))}
                         """
                     else:
-                        error_msg = extract_error_message(response)
-                        openrouter_result.content = f"## ❌ Error\n\n{error_msg}"
+                        error_details = format_error_details(response)
+                        openrouter_result.content = f"""## ❌ OpenRouter {service_type.title()} Error
+
+{error_details}
+
+**Troubleshooting Tips:**
+- Check if OpenRouter API key is configured in .env
+- Verify the service is accessible
+- Try restarting the backend server to clear singleton cache"""
                         
                 except Exception as e:
-                    openrouter_result.content = f"## ❌ Connection Error\n\n{str(e)}"
+                    openrouter_result.content = f"""## ❌ Connection Error
+
+**Error Type:** {type(e).__name__}
+**Details:** {str(e)}
+
+**Service:** OpenRouter {service_type.title()}"""
