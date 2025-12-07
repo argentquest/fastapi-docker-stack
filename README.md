@@ -104,7 +104,7 @@ chmod +x setup.sh && ./setup.sh
 | **LLM Provider** | Azure OpenAI | OpenRouter (GPT-5 Nano) | 95% |
 | **Object Storage** | Azure Blob Storage | MinIO (S3-compatible) | 100% |
 | **Relational DB** | Azure PostgreSQL | PostgreSQL 16 | 90% |
-| **Caching** | Azure Redis | Redis 7.2 | 100% |
+| **Caching** | Azure Redis | Redis 7.4 | 100% |
 | **Reverse Proxy** | Azure CDN | Nginx with SSL | 100% |
 | **Management** | Azure Portal | Portainer + Heimdall | 100% |
 | **IDE** | VS Code Desktop | VS Code Server | 100% |
@@ -921,7 +921,7 @@ Contributors to this project are recognized in our community! Check out [CONTRIB
 ---
 
 **Status:** All 22 services healthy (100%) - Ready for development and testing  
-**Version:** 2.1.0  
-**Last Updated:** August 31, 2025
+**Version:** 2.1.1
+**Last Updated:** December 7, 2025
 
 **🚀 Ready to contribute? Start with a [good first issue](../../issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) or check our [roadmap](ROADMAP.md) for bigger challenges!**
