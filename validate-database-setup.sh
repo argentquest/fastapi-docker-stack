@@ -91,5 +91,5 @@ TOTAL_CONTAINERS=$(docker ps | wc -l)
 echo "📦 Total running containers: $((TOTAL_CONTAINERS-1))"
 echo "🌐 Access URLs:"
 echo "   • pgAdmin: http://localhost:5050 (admin@example.com / admin)"
-echo "   • System Monitor: http://localhost:3000"
-echo "   • Database Credentials: http://localhost:3000/database-credentials.html"
+echo "   • System Monitor: http://localhost:8085"
+echo "   • Database Credentials: http://localhost:8085/database-credentials.html"
