@@ -226,7 +226,7 @@ services:
 
   # Redis - In-memory cache
   redis:
-    image: redis:7.2-alpine
+    image: redis:7.4-alpine
     container_name: aq-devsuite-redis
     restart: unless-stopped
     ports:
@@ -348,7 +348,7 @@ services:
 
   # VS Code Server - Browser-based IDE
   vscode:
-    image: codercom/code-server:4.20.0
+    image: codercom/code-server:latest
     container_name: aq-devsuite-vscode
     restart: "no"
     ports:

@@ -24,9 +24,9 @@ RUN pip install --no-cache-dir \
 
 # Install Python dependencies directly (no requirements.txt needed)
 RUN pip install --no-cache-dir \
-    aiohttp==3.9.1 \
-    aiofiles==23.2.0 \
-    psutil==5.9.6
+    aiohttp==3.10.5 \
+    aiofiles==24.1.0 \
+    psutil==6.0.0
 
 # Copy API server
 COPY api.py /app/
