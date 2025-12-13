@@ -111,7 +111,7 @@ FastAPI Docker Stack v1.0.0
 - Detailed documentation and setup guides
 
 ## 📋 Requirements
-- Python 3.11+
+- Python 3.13+
 - Docker & Docker Compose
 - OpenRouter API key
 - 8GB RAM (16GB recommended)

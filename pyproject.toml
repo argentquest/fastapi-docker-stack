@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "V2 Architecture POC - Docker-based migration from Azure"
 authors = [{ name = "InkAndQuill Team", email = "contact@example.com" }]
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.13"
 
 dependencies = [
     "fastapi>=0.104.0",

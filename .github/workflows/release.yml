@@ -6,7 +6,7 @@ on:
       - 'v*'
 
 env:
-  PYTHON_VERSION: '3.11'
+  PYTHON_VERSION: '3.13.10'
 
 jobs:
   release:
@@ -188,7 +188,7 @@ jobs:
           
           ## ⚠️ Requirements
           
-          - Python 3.11+
+          - Python 3.13+
           - Docker & Docker Compose
           - 8GB RAM (16GB recommended)
           - 20GB disk space

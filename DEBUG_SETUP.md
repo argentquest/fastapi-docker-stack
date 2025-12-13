@@ -29,7 +29,7 @@ This guide explains how to debug the FastAPI application in VS Code within the c
 4. **Local Python Environment:**
    ```bash
    # Create virtual environment
-   python3.11 -m venv .venv
+   python3 -m venv .venv
    
    # Activate it
    # Windows

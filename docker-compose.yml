@@ -156,7 +156,7 @@ services:
         condition: service_healthy
       minio:
         condition: service_healthy
-    command: ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]
+    command: ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]
     networks:
       - v2_network
     healthcheck:

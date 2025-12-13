@@ -464,7 +464,7 @@ In Beszel dashboard:
 - Multi-server support (add more servers later)
 
 ### Prerequisites
-- **Python 3.11** or higher
+- **Python 3.13** or higher
 - **Docker** & **Docker Compose**
 - **8GB RAM** minimum (16GB recommended)
 - **20GB disk space** for containers and data
@@ -555,7 +555,7 @@ This stack provides two FastAPI instances for flexible development:
 
 ```bash
 # Create virtual environment
-python3.11 -m venv .venv
+python3 -m venv .venv
 source .venv/bin/activate  # Linux/Mac
 # .venv\Scripts\activate    # Windows
 

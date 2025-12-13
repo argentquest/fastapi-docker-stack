@@ -1,13 +1,11 @@
-FROM alpine:latest
+FROM python:3.13.10-alpine
 
 # Install dependencies
 RUN apk add --no-cache \
     openssh-keygen \
     curl \
-    jq \
-    python3 \
-    py3-pip \
-    py3-requests
+    jq && \
+    pip install requests
 
 # Copy setup script
 COPY beszel-auto-setup.py /setup.py

@@ -58,8 +58,8 @@ This is a **comprehensive 22-container development environment** designed as a c
 
 2. **Set Up Development Environment**
    ```bash
-   # Create Python 3.11+ virtual environment
-   python3.11 -m venv .venv
+   # Create Python 3.13+ virtual environment
+   python3 -m venv .venv
    source .venv/bin/activate  # Linux/Mac
    # .venv\Scripts\activate    # Windows
 
