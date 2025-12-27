@@ -9,7 +9,14 @@
 .venv/
 venv/
 ENV/
+# Virtual Environments (Host)
+.venv/
+venv/
+ENV/
 env/
+
+# Node Modules (CRITICAL for built context size)
+**/node_modules/
 
 # Application Specific Data (Host) - MASSIVE
 data/

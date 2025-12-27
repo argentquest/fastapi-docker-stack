@@ -168,18 +168,53 @@ echo "   ✅ Engine: System and Config validated"
 echo "🚀 Deployment: Launching Argentquest Stack (21 Containers)..."
 
 # BuildKit Optimization
-# BuildKit is mandatory for the modern 'Dockerfile' features (like cache mounts).
-export DOCKER_BUILDKIT=1
-export COMPOSE_DOCKER_CLI_BUILD=1
+# We default to LEGACY MODE (DISABLE_BUILDKIT=1) to prevent "Exporting to Image" hangs
+# on resource-constrained VMs. This uses 'Dockerfile.legacy' and standard 'docker build'.
+# To enable BuildKit, run: DISABLE_BUILDKIT=0 ./setup.sh
+export DISABLE_BUILDKIT=${DISABLE_BUILDKIT:-1}
+
+if [ "$DISABLE_BUILDKIT" -eq 1 ]; then
+    echo "   ⚠️  BuildKit: DISABLED by default. Using stable legacy builder."
+    export DOCKER_BUILDKIT=0
+    export COMPOSE_DOCKER_CLI_BUILD=0
+else
+    echo "   🚀 BuildKit: ENABLED. Using modern builder with cache mounts."
+    export DOCKER_BUILDKIT=1
+    export COMPOSE_DOCKER_CLI_BUILD=1
+fi
 
 # Sequential Build Strategy
 # Building 'app-dev' first prevents parallel build contention on the Docker daemon,
 # which is the #1 cause of "Exporting to image" hangs in multi-container stacks.
-echo "   🛠️  Phase 1: Pre-building core application image (app-dev)..."
-$DOCKER_COMPOSE build app-dev
+echo "   🛠️  Phase 1: Building core application images..."
 
-echo "   🚢 Phase 2: Launching remaining ecosystem containers..."
-$DOCKER_COMPOSE up -d --pull always
+if [ "$DISABLE_BUILDKIT" -eq 1 ]; then
+     echo "   🐢 Legacy Mode: Performing manual script-based build for ALL services..."
+     
+     echo "      - Building app-dev..."
+     docker build -f Dockerfile.legacy -t argentquest/app-dev:latest .
+
+     echo "      - Building app-prod..."
+     docker build -f Dockerfile.legacy -t argentquest/app-prod:latest .
+
+     echo "      - Building monitor-api..."
+     # Use subshell to ensure correct context and file finding
+     (cd system-monitor && docker build -f Dockerfile.api -t argentquest/monitor-api:latest .)
+
+     echo "      - Building npm-setup..."
+     (cd scripts && docker build -f Dockerfile.npm-setup -t argentquest/npm-setup:latest .)
+
+     echo "      - Building beszel-setup..."
+     (cd scripts && docker build -f Dockerfile.beszel-setup -t argentquest/beszel-setup:latest .)
+     
+     echo "   🚢 Phase 2: Launching containers (No-Build Mode)..."
+     $DOCKER_COMPOSE up -d --no-build
+else
+     echo "   🚀 Modern Mode: Using BuildKit sequential build..."
+     $DOCKER_COMPOSE build app-dev
+     echo "   🚢 Phase 2: Launching remaining ecosystem containers..."
+     $DOCKER_COMPOSE up -d --pull always
+fi
 
 # --- SECTION 4: SERVICE INITIALIZATION WAIT ---
 echo "⏳ Startup: Waiting for core services to reach 'Healthy' state..."

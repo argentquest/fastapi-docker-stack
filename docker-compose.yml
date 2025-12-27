@@ -96,6 +96,7 @@ services:
     build:
       context: ./system-monitor
       dockerfile: Dockerfile.api
+    image: argentquest/monitor-api:latest
     container_name: aq-devsuite-monitor-api
     restart: "no"
     ports:
@@ -113,6 +114,7 @@ services:
   # FastAPI Development - Hot reload enabled
   app-dev:
     build: .
+    image: argentquest/app-dev:latest
     container_name: aq-devsuite-app-dev
     restart: "no"
     ports:
@@ -143,6 +145,7 @@ services:
   # FastAPI Production - Gunicorn with workers
   app-prod:
     build: .
+    image: argentquest/app-prod:latest
     container_name: aq-devsuite-app-prod
     restart: unless-stopped
     env_file:
@@ -405,6 +408,7 @@ services:
     build:
       context: ./scripts
       dockerfile: Dockerfile.npm-setup
+    image: argentquest/npm-setup:latest
     container_name: aq-devsuite-npm-setup
     restart: "no"
     networks:
@@ -427,6 +431,7 @@ services:
     build:
       context: ./scripts
       dockerfile: Dockerfile.beszel-setup
+    image: argentquest/beszel-setup:latest
     container_name: aq-devsuite-beszel-setup
     restart: "no"
     networks:

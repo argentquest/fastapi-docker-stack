@@ -1,0 +1,56 @@
+# Legacy Dockerfile - Standard build without BuildKit cache mounts
+# Use this if the modern BuildKit process hangs on your system.
+
+# --- Builder Stage ---
+FROM python:3.13-slim as builder
+
+# Install uv manually (copy logic remains same)
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
+
+WORKDIR /app
+
+COPY pyproject.toml uv.lock* README.md ./
+
+# Standard Install (No cache mount)
+RUN uv sync --frozen
+
+# --- Production Stage ---
+FROM python:3.13-slim
+
+# Standard Apt Install (No cache mount)
+RUN DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install -y \
+    libpq5 \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
+
+WORKDIR /app
+
+COPY pyproject.toml uv.lock* README.md ./
+
+# Copy venv from builder
+COPY --from=builder /app/.venv /app/.venv
+
+# Copy code
+COPY app/ app/
+COPY frontendclaude/ frontendclaude/
+COPY frontendgemini/ frontendgemini/
+
+# Security & User Setup
+RUN addgroup --system --gid 1001 appgroup && \
+    adduser --system --uid 1001 --ingroup appgroup --home /home/appuser appuser && \
+    mkdir -p /home/appuser/.cache && \
+    chown -R appuser:appgroup /app /home/appuser
+
+ENV UV_CACHE_DIR=/home/appuser/.cache/uv
+ENV HOME=/home/appuser
+
+USER appuser
+
+EXPOSE 8000
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
+
+CMD ["uv", "run", "python", "-m", "app.main"]

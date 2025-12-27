@@ -91,7 +91,7 @@ setup.bat
     [Frontend]  [API]  [Data]  [Management]  [Development] [Monitoring]
         │        │      │         │            │              │
     Heimdall  FastAPI  PostgreSQL Portainer  VS Code         Beszel
-              (x2)     MongoDB    pgAdmin    MCP Inspector    System Monitor
+              (x2)     MongoDB    pgAdmin                     System Monitor
                        Redis      Mongo Expr n8n              Monitor API
                        MinIO      Redis Cmdr Jupyter
 ```
@@ -143,8 +143,12 @@ start.bat
 ### ⚠️ Troubleshooting Build Hangs
 If your setup hangs at "Exporting to image" or "Building app-dev", it means your Docker context is too large or the daemon is contending for resources.
 **Solution:**
-1. Run `./reset_all.sh` to clear the build cache and artifacts.
-2. Run `./setup.sh` again. It now uses **Sequential Builds** and **BuildKit Cache Mounts** to prevent this issue.
+1.  Run `./reset_all.sh` to clear the build cache and artifacts.
+2.  Run `./setup.sh` (Standard fix: Sequential builds).
+3.  **Still Hanging?** Try the legacy builder:
+    ```bash
+    DISABLE_BUILDKIT=1 ./setup.sh
+    ```
 ```
 
 ### 🖥️ Local & Server Deployment Guide
@@ -285,7 +289,6 @@ SERVER_IP    minio.pocmaster.argentquest.com
 SERVER_IP    portainer.pocmaster.argentquest.com
 SERVER_IP    heimdall.pocmaster.argentquest.com
 SERVER_IP    code.pocmaster.argentquest.com
-SERVER_IP    mcp.pocmaster.argentquest.com
 SERVER_IP    n8n.pocmaster.argentquest.com
 SERVER_IP    jupyter.pocmaster.argentquest.com
 ```
@@ -373,7 +376,6 @@ Find lines 100-104 and replace `pocmaster.argentquest.com` with your domain:
 ("api-dev.mystack.local", "aq-devsuite-app-dev", 8000),
 ("n8n.mystack.local", "aq-devsuite-n8n", 5678),
 ("jupyter.mystack.local", "aq-devsuite-jupyter", 8888),
-("mcp.mystack.local", "aq-devsuite-mcp-inspector", 5173),
 ```
 
 **B. Update dashboard links:**
@@ -382,14 +384,6 @@ nano system-monitor/index.html
 ```
 Replace ALL occurrences of `pocmaster.argentquest.com` with your domain (approximately 15-20 links)
 
-**C. Update MCP Inspector allowed hosts:**
-```bash
-nano mcp-inspector/Dockerfile
-```
-Line 29: Add your domain to allowedHosts:
-```javascript
-allowedHosts: ["mcp.pocmaster.argentquest.com", "mcp.YOURDOMAIN.com", "localhost", "127.0.0.1"]
-```
 
 #### 3. Update Your Hosts File
 **Windows (Administrator):** `notepad C:\Windows\System32\drivers\etc\hosts`
@@ -408,16 +402,12 @@ SERVER_IP    minio.yourdomain.com
 SERVER_IP    portainer.yourdomain.com
 SERVER_IP    heimdall.yourdomain.com
 SERVER_IP    code.yourdomain.com
-SERVER_IP    mcp.yourdomain.com
 SERVER_IP    n8n.yourdomain.com
 SERVER_IP    jupyter.yourdomain.com
 ```
 
 #### 4. Rebuild and Deploy
 ```bash
-# Rebuild MCP Inspector with new allowed hosts
-docker-compose build mcp-inspector
-
 # Restart deployment
 docker-compose down && docker-compose up -d
 
@@ -518,7 +508,6 @@ In Beszel dashboard:
 | Service | URL | Purpose | Status |
 |---------|-----|---------|---------|
 | **VS Code Server** | http://code.pocmaster.argentquest.com | Browser-based IDE | ✅ Healthy |
-| **MCP Inspector** | http://mcp.pocmaster.argentquest.com | Model Context Protocol testing | ✅ Healthy |
 | **n8n Workflows** | http://n8n.pocmaster.argentquest.com | Visual workflow automation | ✅ Healthy |
 | **Jupyter Lab** | http://jupyter.pocmaster.argentquest.com | Data science notebooks | ✅ Healthy |
 
