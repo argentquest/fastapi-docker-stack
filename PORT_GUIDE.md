@@ -2,69 +2,52 @@
 
 ## Service Ports Overview
 
-| Service | Docker Mode | Local Debug Mode | No Conflict? |
-|---------|------------|------------------|--------------|
-| **FastAPI App** | localhost:8000 | localhost:8001 | ✅ Yes |
-| **PostgreSQL** | localhost:5432 | localhost:5432 (use Docker) | ✅ Yes |
-| **Redis** | localhost:6379 | localhost:6379 (use Docker) | ✅ Yes |
-| **MinIO API** | localhost:9000 | localhost:9000 (use Docker) | ✅ Yes |
-| **MinIO Console** | localhost:9001 | localhost:9001 (use Docker) | ✅ Yes |
-| **pgAdmin** | localhost:5050 | localhost:5050 (use Docker) | ✅ Yes |
-| **Redis Commander** | localhost:8081 | localhost:8081 (use Docker) | ✅ Yes |
-| **Dashboard** | localhost:8082 | localhost:8082 (use Docker) | ✅ Yes |
-| **Nginx Proxy** | localhost:80, 81, 443 | localhost:80, 81, 443 (use Docker) | ✅ Yes |
+| Service | Docker Host Port | Container Port | Notes |
+|---------|------------------|----------------|-------|
+| **NPM (Proxy)** | 80, 443 | 80, 443 | Main Entrypoint |
+| **NPM Admin** | 81 | 81 | Admin UI |
+| **FastAPI Dev** | 8001 | 8000 | Direct Access |
+| **FastAPI Prod** | - | 8000 | Access via NPM (`api.pocmaster...`) |
+| **PostgreSQL** | 5432 | 5432 | Direct Access |
+| **Redis** | 6379 | 6379 | Direct Access |
+| **MinIO API** | 9000 | 9000 | Direct Access |
+| **MinIO Console** | 9001 | 9001 | Direct Access |
+| **pgAdmin** | 5050 | 80 | Direct Access |
+| **Mongo Express** | 8082 | 8081 | Direct Access |
+| **Redis Commander** | 8084 | 8081 | Direct Access |
+| **Heimdall** | 8086 | 80 | Main Dashboard |
+| **Beszel** | 8090 | 8090 | Monitoring |
 
-## Running Both Simultaneously
+## Docker vs Local Development
 
-Now you can run **BOTH** Docker and Local debug at the same time:
+You can run the Docker environment and a local instance simultaneously without conflicts:
 
-### Docker FastAPI (Production-like)
-- **URL:** http://localhost:8000
-- **Docs:** http://localhost:8000/docs
-- **Running in:** Docker container
-- **Logs:** `docker-compose logs -f app`
+### 1. Docker Dev Container
+- **URL:** `http://localhost:8001` (or `http://api-dev.pocmaster.argentquest.com`)
+- **Port:** 8001 mapped to container 8000
+- **Use for:** Integration testing, hot-reload within Docker
 
-### Local FastAPI (Debug Mode)
-- **URL:** http://localhost:8001  ⬅️ Different port!
-- **Docs:** http://localhost:8001/docs
-- **Running in:** Your local machine with VSCode debugger
-- **Logs:** VSCode terminal
+### 2. Docker Production Container
+- **URL:** `http://api.pocmaster.argentquest.com`
+- **Port:** Not exposed directly (accessed via NPM on port 80/443)
+- **Use for:** Production-like verification
 
-## Benefits of This Setup
+### 3. Local Python (VS Code Debug)
+- **URL:** `http://localhost:8000` (Default uvicorn port)
+- **Port:** 8000 (Host machine)
+- **Use for:** Fast debugging with breakpoints
 
-1. **Compare behavior:** Run production Docker version and debug version side-by-side
-2. **No port conflicts:** Each uses different port
-3. **Shared services:** Both use the same PostgreSQL, Redis, MinIO instances
-4. **Fast debugging:** Local debug with breakpoints
-5. **Integration testing:** Test against real services
+## Quick Connection Check
 
-## Quick Commands
-
-### Start everything (Docker + Debug):
 ```bash
-# Terminal 1: Start all Docker services
-docker-compose up -d
-
-# VSCode: Select "FastAPI - Local Debug (Port 8001)" and press F5
-```
-
-### Access both versions:
-```bash
-# Docker version
-curl http://localhost:8000/health
-
-# Debug version
+# Check Docker Dev App
 curl http://localhost:8001/health
-```
 
-### Test specific version:
-```python
-# Test Docker version
-import requests
-response = requests.get("http://localhost:8000/health")
+# Check Production App (via NPM)
+curl -H "Host: api.pocmaster.argentquest.com" http://localhost/health
 
-# Test Debug version
-response = requests.get("http://localhost:8001/health")
+# Check Local App (if running)
+curl http://localhost:8000/health
 ```
 
 ## Port Forwarding for Remote Development
@@ -76,45 +59,47 @@ If using WSL2, Remote SSH, or Codespaces:
 {
     "remote.autoForwardPorts": true,
     "remote.forwardPorts": [
-        8000,  // Docker FastAPI
-        8001,  // Local Debug FastAPI
+        8001,  // Docker FastAPI Dev
+        8000,  // Local Debug FastAPI (if running)
         5432,  // PostgreSQL
         6379,  // Redis
         9000,  // MinIO API
         9001,  // MinIO Console
         5050,  // pgAdmin
-        8081,  // Redis Commander
-        8082,  // Dashboard
-        5678   // Remote debugger (if using)
+        8084,  // Redis Commander
+        8086,  // Heimdall Dashboard
+        5678   // n8n
     ]
 }
 ```
 
-## Switching Between Modes
+## Modes Summary
 
-### Use Docker Version (8000):
-- For testing production-like behavior
-- For performance testing
-- For container-specific issues
+### Docker Dev Version (8001):
+- For testing changes in container
+- For hot-reload development
+- For integration testing
 
-### Use Debug Version (8001):
-- For development
-- For debugging with breakpoints
-- For rapid iteration with hot reload
-- For inspecting variables
+### Docker Prod Version (Domain):
+- For final validation
+- For performance verification
+
+### Local Debug (8000):
+- For rapid iteration
+- For breakpoint debugging
 
 ## Environment-Specific Testing
 
 ```bash
-# Test with Docker environment
-curl -X POST http://localhost:8000/test-endpoint \
-  -H "Content-Type: application/json" \
-  -d '{"test": "docker"}'
-
-# Test with Debug environment
+# Test with Docker Dev environment
 curl -X POST http://localhost:8001/test-endpoint \
   -H "Content-Type: application/json" \
-  -d '{"test": "debug"}'
+  -d '{"test": "docker-dev"}'
+
+# Test with Production environment
+curl -X POST http://pocmaster.argentquest.com/test-endpoint \
+  -H "Content-Type: application/json" \
+  -d '{"test": "production"}'
 ```
 
 ## Troubleshooting Ports

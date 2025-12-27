@@ -48,7 +48,7 @@ def login_npm(base_url):
             print("✓ NPM login successful")
             return data.get('token')
         else:
-            print(f"❌ NPM login failed: {response.status_code}")
+            print(f"❌ NPM login failed: {response.status_code} Body: {response.text}")
             return None
             
     except Exception as e:
@@ -177,7 +177,7 @@ def main():
         {
             "domain_names": ["portainer.pocmaster.argentquest.com"],
             "forward_scheme": "https",
-            "forward_host": "aq-devsuite-portainer",
+            "forward_host": "portainer",
             "forward_port": 9443,
             "advanced_config": "proxy_ssl_verify off;"
         },
@@ -213,12 +213,6 @@ def main():
             "forward_port": 8080,
             "advanced_config": "proxy_connect_timeout 120s; proxy_send_timeout 120s; proxy_read_timeout 120s;"
         },
-        # MCP Inspector
-        {
-            "domain_names": ["mcp.pocmaster.argentquest.com"],
-            "forward_host": "aq-devsuite-mcp-inspector",
-            "forward_port": 5173
-        },
         # n8n
         {
             "domain_names": ["n8n.pocmaster.argentquest.com"],
@@ -242,6 +236,12 @@ def main():
             "domain_names": ["heimdall.pocmaster.argentquest.com"],
             "forward_host": "aq-devsuite-heimdall",
             "forward_port": 80
+        },
+        # Monitor API
+        {
+            "domain_names": ["monitor-api.pocmaster.argentquest.com"],
+            "forward_host": "aq-devsuite-monitor-api",
+            "forward_port": 8083
         }
     ]
     
@@ -254,6 +254,16 @@ def main():
     
     print("="*50)
     print(f"Setup complete: {success}/{len(services)} hosts configured")
+    
+    # 6. Run Heimdall Setup
+    print("="*50)
+    print("Running Heimdall Auto-Configuration...")
+    try:
+        import subprocess
+        subprocess.run(["python3", "heimdall-auto-setup.py"], check=False)
+    except Exception as e:
+        print(f"Failed to run Heimdall setup: {e}")
+        
     print("="*50)
 
 if __name__ == "__main__":

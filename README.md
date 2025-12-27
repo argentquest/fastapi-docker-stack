@@ -17,15 +17,15 @@ A comprehensive development stack with dual FastAPI environments, multiple datab
 
 ### 🚀 **Quick Start for Contributors**
 ```bash
-# One-command setup - works on Windows, Mac, and Linux
-git clone https://github.com/argentquest/fastapi-docker-stack.git
-cd fastapi-docker-stack
+# Linux and macOS users (Robust First-Time Setup):
+# 1. Nuclear reset to ensure a clean Docker environment
+chmod +x reset_all.sh && ./reset_all.sh
+
+# 2. Main setup to deploy the suite
+chmod +x setup.sh && ./setup.sh
 
 # Windows users:
 setup.bat
-
-# Mac/Linux users:
-chmod +x setup.sh && ./setup.sh
 
 # Then visit: http://pocmaster.argentquest.com
 ```
@@ -61,11 +61,12 @@ chmod +x setup.sh && ./setup.sh
 
 ## 🎯 Project Goals
 
-- **Cost Reduction**: 90% reduction in monthly operational costs
-- **Self-Hosted Infrastructure**: Full control over deployment and data
-- **Modern Architecture**: Containerized microservices with Docker
-- **Open Source Stack**: Leverage open-source alternatives to Azure services
-- **Performance**: Maintain or improve response times and throughput
+- **Isolated Development & Learning**: Priority on running in a **Kubuntu 24.04 VM** to ensure an isolated, consistent environment and to facilitate practical Linux system administration learning.
+- **Cost Reduction**: 90% reduction in monthly operational costs compared to cloud services.
+- **Self-Hosted Infrastructure**: Full control over deployment and data.
+- **Modern Architecture**: Containerized microservices with Docker.
+- **Open Source Stack**: Leverage open-source alternatives to proprietary cloud services.
+
 
 ## 🏗️ Architecture
 
@@ -111,9 +112,16 @@ chmod +x setup.sh && ./setup.sh
 
 ## 🚀 Quick Start
 
-### Windows Users - Automated Startup Scripts
+### 🐧 Recommended Deployment: Kubuntu VM
+We strongly recommend running this stack inside a **Kubuntu 24.04 Virtual Machine**. This provides several key benefits:
+1.  **Isolation**: Keeps your development environment clean and separate from your host OS.
+2.  **Linux Learning**: Provides a safe sandbox to learn Linux commands and system administration without risking your main machine.
+3.  **Consistency**: Matches the production server environment (Ubuntu Server) exactly.
 
-We provide PowerShell scripts that automatically check if Docker Desktop is running, start it if needed, and manage your containers:
+👉 **See [VirtualBox.md](VirtualBox.md) for the complete VM setup guide.**
+
+### 🪟 Legacy / Native Windows Support
+While we prioritize the Linux VM approach, the stack *can* run natively on Windows via Docker Desktop if preferred. Use the automated scripts below:
 
 ```powershell
 # Start environment (auto-starts Docker Desktop if needed)
@@ -166,6 +174,9 @@ exit
 git clone <your-repo-url> argentquest-suite
 cd argentquest-suite
 
+# IMPORTANT: For first-time installation, perform a nuclear reset to ensure a clean Docker environment
+chmod +x reset_all.sh && ./reset_all.sh
+
 # Create Python virtual environment
 python3 -m venv .venv
 source .venv/bin/activate
@@ -177,7 +188,7 @@ pip install requests python-dotenv
 #### 3. Configure Environment
 ```bash
 # Create environment file
-cp .env.example .env
+cp .env.template .env
 nano .env
 ```
 
@@ -555,7 +566,7 @@ This stack provides two FastAPI instances for flexible development:
 
 ```bash
 # Create virtual environment
-python3.11 -m venv .venv
+python3.13 -m venv .venv
 source .venv/bin/activate  # Linux/Mac
 # .venv\Scripts\activate    # Windows
 
@@ -577,7 +588,7 @@ pip install uv
 | **VS Code Server** | - | changeme | Browser IDE |
 | **n8n Workflows** | - | - | User management disabled |
 | **Jupyter Lab** | - | changeme | Token-based auth |
-| **Portainer** | - | - | ⚠️ First-time setup required |
+| **Portainer** | admin | argentquest123 | 🚀 Automagically configured |
 
 ### Database Connections
 

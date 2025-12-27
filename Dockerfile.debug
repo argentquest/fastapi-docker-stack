@@ -1,5 +1,5 @@
 # Dockerfile.debug - FastAPI app with remote debugging support
-FROM python:3.11-slim as builder
+FROM python:3.13-slim as builder
 
 # Install uv for dependency management
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
@@ -13,7 +13,7 @@ COPY pyproject.toml uv.lock* README.md ./
 RUN uv sync --frozen && \
     uv pip install debugpy
 
-FROM python:3.11-slim
+FROM python:3.13-slim
 
 # Install runtime dependencies
 RUN DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install -y \

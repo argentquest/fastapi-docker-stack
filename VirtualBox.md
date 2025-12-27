@@ -1,164 +1,151 @@
-# VirtualBox Installation and VM Setup Guide
+# VirtualBox Installation and Kubuntu VM Setup Guide
 
 ## Introduction
 
-This guide provides detailed instructions for installing Oracle VirtualBox on Windows 11 and macOS. It also covers how to download the Ubuntu 24.04 LTS Server ISO and create a new virtual machine (VM) with a specific configuration.
+This guide provides detailed instructions for installing Oracle VirtualBox on Windows 11 and Linux hosts, creating a **Kubuntu 24.04** VM (manual or automated), and setting up the **Argentquest Development Suite**.
 
-## Installation on Windows 11
+## 1. Install VirtualBox
 
-### 1. Download VirtualBox and Extension Pack
-
-*   Go to the official VirtualBox download page: [https://www.virtualbox.org/wiki/Downloads](https://www.virtualbox.org/wiki/Downloads)
-*   Click on the "Windows hosts" link to download the VirtualBox installer.
-*   On the same page, download the "VirtualBox Extension Pack".
-
-### 2. Install VirtualBox
-
-*   Run the downloaded VirtualBox installer.
-*   Follow the on-screen instructions, accepting the default settings.
-*   If prompted about network interfaces being reset, click "Yes" to continue.
-*   Once the installation is complete, click "Finish".
-
-### 3. Install the VirtualBox Extension Pack
-
-*   Open VirtualBox.
-*   Go to `File > Tools > Extension Pack Manager`.
-*   Click "Install" and select the downloaded Extension Pack file (`.vbox-extpack`).
-*   Follow the on-screen prompts to complete the installation.
-
-## Installation on macOS
-
-### 1. Download VirtualBox and Extension Pack
-
-*   Go to the official VirtualBox download page: [https://www.virtualbox.org/wiki/Downloads](https://www.virtualbox.org/wiki/Downloads)
-*   Click on the "macOS / Intel hosts" or "Developer preview for macOS / Arm64 hosts" link, depending on your Mac's processor.
-*   On the same page, download the "VirtualBox Extension Pack".
-
-### 2. Install VirtualBox
-
-*   Open the downloaded `.dmg` file and double-click the `VirtualBox.pkg` installer.
-*   Follow the on-screen instructions to complete the installation.
-
-### 3. Handle Security Prompts
-
-*   During the installation, you may be prompted to allow the installation of a kernel extension from "Oracle America, Inc.".
-*   Go to `System Preferences > Security & Privacy > General`.
-*   Click the "Allow" button.
-*   If the "Allow" button is not available, you may need to restart your Mac in Recovery Mode and use the `spctl kext-consent add VB5E2TV963` command in the terminal to grant permission.
-
-### 4. Install the VirtualBox Extension Pack
-
-*   Open VirtualBox.
-*   Go to `File > Tools > Extension Pack Manager`.
-*   Click "Install" and select the downloaded Extension Pack file (`.vbox-extpack`).
-*   Follow the on-screen prompts to complete the installation.
-
-## Downloading the Ubuntu 24.04 LTS Server ISO
-
-*   Go to the official Ubuntu Server download page: [https://ubuntu.com/download/server](https://ubuntu.com/download/server)
-*   Click on the "Download Ubuntu Server 24.04 LTS" button.
-*   The ISO file will start downloading.
-
-## Creating a New Virtual Machine
-
-### 1. Create a New VM
-
-*   Open VirtualBox and click the "New" button.
-*   In the "Name and Operating System" section, give your VM a name (e.g., "Ubuntu Server") and select "Linux" as the type and "Ubuntu (64-bit)" as the version.
-
-### 2. Configure Memory and CPU
-
-*   In the "Memory size" section, set the memory to `8192` MB (8 GB).
-*   In the "Processor(s)" section, set the number of CPUs to `1`.
-
-### 3. Create a Virtual Hard Disk
-
-*   In the "Hard disk" section, select "Create a virtual hard disk now" and click "Create".
-*   Choose "VDI (VirtualBox Disk Image)" as the hard disk file type.
-*   Select "Dynamically allocated".
-*   Set the size of the virtual hard disk to `100` GB.
-*   Click "Create" to create the virtual hard disk.
-
-### 4. Configure Network Settings
-
-*   Select the newly created VM in the VirtualBox Manager and click "Settings".
-*   Go to the "Network" section.
-*   In the "Adapter 1" tab, select "Enable Network Adapter".
-*   In the "Attached to" dropdown menu, select "Bridged Adapter".
-*   From the "Name" dropdown, select your host's active network interface (e.g., your Wi-Fi or Ethernet adapter).
-*   Click "OK" to save the settings.
-
-### 5. Install Ubuntu Server
-
-*   Select the VM and click "Start".
-*   In the "Select start-up disk" window, click the folder icon and select the downloaded Ubuntu 24.04 LTS Server ISO file.
-*   Click "Start" to begin the installation process.
-*   Follow the on-screen instructions to install Ubuntu Server on your new VM.
-*   **Set Up Your User Account:** During the installation, you will be prompted to create a user account. We suggest using a simple username like `devadmin` or `ubuntu`. This user will be granted `sudo` privileges, which is the recommended way to perform administrative tasks. You will not be prompted to set a password for the `root` user directly.
-
-> **Note on Root Access:** For security reasons, Ubuntu disables the root account by default. To run commands with administrative privileges, you should use the `sudo` command before the command you want to run (e.g., `sudo apt update`). If you still wish to enable the root account with a password, you can do so *after* the installation is complete by running the following command in the VM's terminal: `sudo passwd root`
-
-## Connecting to the VM with SSH
-
-### 1. Get the VM's IP Address
-
-*   Once the Ubuntu Server installation is complete, log in to the VM.
-*   Open a terminal and type the following command to get the VM's IP address:
+### Linux Host (Ubuntu/Debian)
+1.  **Update and Install Dependencies**:
     ```bash
-    ip addr show
+    sudo apt update
+    sudo apt install -y software-properties-common wget
     ```
-*   Look for the IP address associated with the `eth0` or `enp0s3` interface.
-
-### 2. Connect with SSH
-
-#### Windows (using Putty)
-
-*   Open Putty on your Windows machine.
-*   In the "Host Name (or IP address)" field, enter the IP address of your VM.
-*   Ensure the "Port" is set to `22` and the "Connection type" is set to "SSH".
-*   Click "Open" to start the SSH session.
-
-#### macOS (using the Terminal)
-
-*   Open the Terminal application on your macOS machine.
-*   Use the following command to connect to your VM, replacing `username` with the username you created during the Ubuntu installation and `your_vm_ip_address` with the IP address of your VM:
+2.  **Add Oracle Repository and Key**:
     ```bash
-    ssh username@your_vm_ip_address
+    wget -O- https://www.virtualbox.org/download/oracle_vbox_2016.asc | sudo gpg --dearmor --yes --output /usr/share/keyrings/oracle-virtualbox-2016.gpg
+    echo "deb [arch=amd64 signed-by=/usr/share/keyrings/oracle-virtualbox-2016.gpg] https://download.virtualbox.org/virtualbox/debian $(lsb_release -cs) contrib" | sudo tee /etc/apt/sources.list.d/virtualbox.list
+    ```
+3.  **Install VirtualBox**:
+    ```bash
+    sudo apt update
+    sudo apt install -y virtualbox-7.0
     ```
 
-### 3. Log In
+### Windows 11 Host
+1.  Download the **Windows hosts** installer from [virtualbox.org](https://www.virtualbox.org/wiki/Downloads).
+2.  Run the installer (`VirtualBox-x.x.x-Win.exe`).
+3.  Follow the setup wizard.
+4.  **Extension Pack**: Download "All supported platforms" from the same page and install via **File > Tools > Extension Pack Manager**.
 
-*   You will be prompted for your password.
-*   Enter the password you created during the Ubuntu Server installation.
-*   You should now be logged in to your VM via SSH.
+## 2. Prerequisites
+-   **Kubuntu 24.04 LTS ISO**: Download from [kubuntu.org/getkubuntu/](https://kubuntu.org/getkubuntu/).
 
-## Post-Installation: Setting Up the Development Environment
+## 3. Create the Virtual Machine
 
-Once your Ubuntu Server VM is running, you can proceed to set up the Argentquest Development Suite.
+### Option A: Manual Creation (GUI)
+1.  Open VirtualBox and click **New**.
+2.  **Name**: `Kubuntu 24.04` (Type: Linux, Version: Ubuntu 64-bit).
+3.  **Hardware**:
+    *   **RAM**: At least **8192 MB** (8 GB).
+    *   **CPU**: At least **2 CPUs** (4 recommended).
+4.  **Hard Disk**: **200 GB** (VDI, Dynamically Allocated).
+5.  **Network** (Crucial Step):
+    *   Go to **Settings > Network**.
+    *   Change "Attached to" to **Bridged Adapter**.
+    *   Select your active host interface (Ethernet/Wi-Fi).
+6.  Click **Finish**.
 
-### 1. Prepare the VM for Docker
+### Option B: Automated Creation (Command Line)
 
-After SSH connection is established, update the system and install prerequisites:
-
+#### Linux Host (Bash)
 ```bash
-# Update system packages
-sudo apt update && sudo apt upgrade -y
+ISO_PATH="/path/to/kubuntu-24.04-desktop-amd64.iso"
+VM_NAME="Kubuntu 24.04"
 
-# Install essential packages
-sudo apt install -y curl wget git nano htop unzip python3 python3-pip python3-venv
+# Create VM
+VBoxManage createvm --name "$VM_NAME" --ostype "Ubuntu_64" --register --basefolder "$HOME/VirtualBox VMs"
 
-# Install Docker
-curl -fsSL https://get.docker.com -o get-docker.sh
-sudo sh get-docker.sh
-sudo usermod -aG docker $USER
+# Configure Hardware (8GB RAM, 2 CPUs, 128MB VRAM)
+VBoxManage modifyvm "$VM_NAME" --memory 8192 --cpus 2 --vram 128 --graphicscontroller vmsvga --accelerate3d on
 
-# Install Docker Compose
-sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-sudo chmod +x /usr/local/bin/docker-compose
+# Create Hard Disk (200GB)
+VBoxManage createhd --filename "$HOME/VirtualBox VMs/$VM_NAME/$VM_NAME.vdi" --size 204800 --format VDI
 
-# Log out and back in for Docker permissions to take effect
-exit
+# Attach Storage
+VBoxManage storagectl "$VM_NAME" --name "SATA Controller" --add sata --controller IntelAHCI
+VBoxManage storageattach "$VM_NAME" --storagectl "SATA Controller" --port 0 --device 0 --type hdd --medium "$HOME/VirtualBox VMs/$VM_NAME/$VM_NAME.vdi"
+
+VBoxManage storagectl "$VM_NAME" --name "IDE Controller" --add ide
+VBoxManage storageattach "$VM_NAME" --storagectl "IDE Controller" --port 0 --device 0 --type dvddrive --medium "$ISO_PATH"
+
+echo "VM created. REMEMBER: Manually set Network to 'Bridged Adapter' in Settings > Network."
 ```
+
+#### Windows 11 Host (PowerShell)
+Run as Administrator:
+```powershell
+$VmName = "Kubuntu 24.04"
+$IsoPath = "C:\Users\YourUser\Downloads\kubuntu-24.04-desktop-amd64.iso"
+$VBoxManage = "C:\Program Files\Oracle\VirtualBox\VBoxManage.exe"
+
+& $VBoxManage createvm --name $VmName --ostype "Ubuntu_64" --register
+& $VBoxManage modifyvm $VmName --memory 8192 --cpus 2 --vram 128 --graphicscontroller vmsvga --accelerate3d on
+
+$VmFolder = "$env:USERPROFILE\VirtualBox VMs\$VmName"
+& $VBoxManage createhd --filename "$VmFolder\$VmName.vdi" --size 204800 --format VDI
+
+& $VBoxManage storagectl $VmName --name "SATA Controller" --add sata --controller IntelAHCI
+& $VBoxManage storageattach $VmName --storagectl "SATA Controller" --port 0 --device 0 --type hdd --medium "$VmFolder\$VmName.vdi"
+
+& $VBoxManage storagectl $VmName --name "IDE Controller" --add ide
+& $VBoxManage storageattach $VmName --storagectl "IDE Controller" --port 0 --device 0 --type dvddrive --medium $IsoPath
+
+Write-Host "VM created. REMEMBER: Manually set Network to 'Bridged Adapter' in Settings > Network."
+```
+
+## 4. Install Kubuntu
+1.  Start the VM and select **Try or Install Kubuntu**.
+2.  Choose **Install Kubuntu**, select Language/Keyboard.
+3.  Choose **Normal Installation** + **Third-party software**.
+4.  **Erase disk and install Kubuntu**.
+5.  Create your user (e.g., `devadmin`) and password.
+6.  Reboot when finished.
+
+## 5. Post-Installation: Automated Environment Setup
+
+Instead of running manual commands, use this script to install Docker, VS Code, Python 3.13, and Git.
+
+1.  Open Terminal (`Ctrl+Alt+T`) in the VM.
+2.  Create `setup_env.sh`:
+    ```bash
+    nano setup_env.sh
+    ```
+3.  Paste this content:
+    ```bash
+    #!/bin/bash
+    set -e
+    echo ">>> Updating system..."
+    sudo apt update && sudo apt upgrade -y
+    echo ">>> Installing Dependencies..."
+    sudo apt install -y software-properties-common curl git wget apt-transport-https ca-certificates gnupg
+    echo ">>> Installing Python 3.13..."
+    sudo add-apt-repository ppa:deadsnakes/ppa -y
+    sudo apt update
+    sudo apt install -y python3.13 python3.13-venv python3.13-dev
+    echo ">>> Installing Docker..."
+    sudo install -m 0755 -d /etc/apt/keyrings
+    sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+    sudo chmod a+r /etc/apt/keyrings/docker.asc
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+    sudo apt update
+    sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+    sudo usermod -aG docker $USER
+    echo ">>> Installing VS Code..."
+    wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > packages.microsoft.gpg
+    sudo install -D -o root -g root -m 644 packages.microsoft.gpg /etc/apt/keyrings/packages.microsoft.gpg
+    sudo sh -c 'echo "deb [arch=amd64,arm64,armhf signed-by=/etc/apt/keyrings/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main" > /etc/apt/sources.list.d/vscode.list'
+    rm -f packages.microsoft.gpg
+    sudo apt update
+    sudo apt install -y code
+    echo ">>> Done! Please REBOOT."
+    ```
+4.  Run it:
+    ```bash
+    chmod +x setup_env.sh
+    ./setup_env.sh
+    ```
 
 ### 2. Clone and Deploy the Development Suite
 

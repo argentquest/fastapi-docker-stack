@@ -3,7 +3,7 @@
 # --- Builder Stage ---
 # This stage installs the Python dependencies into a virtual environment.
 # Using a separate stage keeps the final image smaller.
-FROM python:3.11-slim as builder
+FROM python:3.13-slim as builder
 
 # Install the uv package manager from its official image.
 # This is faster than installing via pip.
@@ -22,7 +22,7 @@ RUN uv sync --frozen
 
 # --- Production Stage ---
 # This stage creates the final, lean image for the application.
-FROM python:3.11-slim
+FROM python:3.13-slim
 
 # Install system dependencies required by libraries like psycopg2 (for PostgreSQL).
 # libpq5 is the PostgreSQL C client library.

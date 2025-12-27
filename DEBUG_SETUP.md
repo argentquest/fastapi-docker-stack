@@ -13,7 +13,7 @@ This guide explains how to debug the FastAPI application in VS Code within the c
 2. **System Setup:**
    ```bash
    # Ensure all 22 containers are running
-   docker-compose up -d
+   docker compose up -d
    
    # Validate system health
    python health-check.py
@@ -29,7 +29,7 @@ This guide explains how to debug the FastAPI application in VS Code within the c
 4. **Local Python Environment:**
    ```bash
    # Create virtual environment
-   python3.11 -m venv .venv
+   python3.13 -m venv .venv
    
    # Activate it
    # Windows
@@ -78,7 +78,7 @@ Multiple debugging approaches are available for the 22-container development env
 **Setup:**
 1. Ensure app-dev container is running with hot-reload:
    ```bash
-   docker-compose logs -f app-dev  # Should show uvicorn --reload
+   docker compose logs -f app-dev  # Should show uvicorn --reload
    ```
 2. Use remote debugging techniques or container attach
 3. Debug through the volume-mounted code in `./app/`
@@ -131,8 +131,8 @@ docker exec -it aq-devsuite-app-dev bash
 docker exec -it aq-devsuite-app-prod bash
 
 # View logs in real-time
-docker-compose logs -f app-dev
-docker-compose logs -f app-prod
+docker compose logs -f app-dev
+docker compose logs -f app-prod
 
 # Compare environment configurations
 docker exec aq-devsuite-app-dev env | grep DATABASE_URL
@@ -263,10 +263,10 @@ docker exec aq-devsuite-app-prod env | grep DATABASE_URL
 docker inspect aq-devsuite-app-dev --format '{{range .Mounts}}{{.Source}} → {{.Destination}}{{"\n"}}{{end}}'
 
 # Check if uvicorn is running with --reload
-docker-compose logs app-dev | grep reload
+docker compose logs app-dev | grep reload
 
 # Restart the development container
-docker-compose restart app-dev
+docker compose restart app-dev
 ```
 
 ### Issue: Cannot access domain-based URLs
@@ -289,18 +289,18 @@ curl http://localhost:8003/health  # app-dev direct port
 **Solution:** Diagnose container health:
 ```bash
 # Check all container statuses
-docker-compose ps
+docker compose ps
 
 # View logs for failing containers
-docker-compose logs [container-name]
+docker compose logs [container-name]
 
 # Common fixes:
-docker-compose down
-docker-compose up -d
+docker compose down
+docker compose up -d
 
 # For persistent issues, clean and rebuild
-docker-compose down --volumes
-docker-compose up -d --build
+docker compose down --volumes
+docker compose up -d --build
 ```
 
 ### Issue: Module not found or import errors
@@ -308,7 +308,7 @@ docker-compose up -d --build
 **Solution:** Ensure virtual environment is properly set up:
 ```bash
 # Recreate virtual environment
-python3.11 -m venv .venv
+python3.13 -m venv .venv
 source .venv/bin/activate  # Linux/Mac
 # .venv\Scripts\activate   # Windows
 
@@ -325,7 +325,7 @@ uv pip install -e .
 docker ps | grep vscode
 
 # View VS Code Server logs
-docker-compose logs vscode
+docker compose logs vscode
 
 # Verify password in .env file
 grep VSCODE_PASSWORD .env
@@ -438,7 +438,7 @@ Debug mode adds overhead and security risks:
 
 ```bash
 # 1. Start all 22 containers
-docker-compose up -d
+docker compose up -d
 
 # 2. Wait for initialization and validate
 sleep 60
@@ -454,7 +454,7 @@ python health-check.py
 
 ```bash
 # 1. Ensure all containers are running
-docker-compose up -d
+docker compose up -d
 
 # 2. Access VS Code Server in browser
 # URL: http://code.pocmaster.argentquest.com
@@ -469,8 +469,8 @@ docker-compose up -d
 
 ```bash
 # 1. Start containers and verify app-dev hot-reload
-docker-compose up -d
-docker-compose logs -f app-dev | grep reload
+docker compose up -d
+docker compose logs -f app-dev | grep reload
 
 # 2. Make code changes in ./app/ directory  
 # 3. Changes automatically sync to container
@@ -499,6 +499,6 @@ Happy debugging! 🐛🔍
 
 ---
 
-**Last Updated**: August 31, 2025  
+**Last Updated**: December 26, 2025  
 **System**: Argentquest Development Suite (22 containers)  
 **Debug Methods**: Local, Browser-based, Container debugging

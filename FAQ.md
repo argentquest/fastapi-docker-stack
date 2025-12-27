@@ -29,7 +29,12 @@
    Restart-Service *docker*
    ```
 
-4. **Easiest: Open Docker Desktop App**
+4. **Kubuntu / Linux**
+   ```bash
+   sudo systemctl restart docker
+   ```
+
+5. **Easiest: Open Docker Desktop App**
    - Open Docker Desktop from Start Menu
    - It will start automatically
 
@@ -37,6 +42,28 @@ Once Docker is running, start your containers:
 ```bash
 docker-compose up -d
 ```
+
+---
+
+### Q: Why can't I access my VM from my host machine?
+**Date:** 2025-12-26
+
+**Answer:** This is usually due to the Network Adapter setting in VirtualBox.
+1.  **Check Network Setting**: Ensure the VM is set to **Bridged Adapter** (not NAT).
+2.  **Verify IP**: Run `ip addr show` in the VM to get the correct IP (e.g., `192.168.1.x`).
+3.  **Firewall**: Ensure `ufw` limits access but allows ports 80/443/81.
+4.  **See Guide**: Refer to [VirtualBox.md](VirtualBox.md) for the complete network setup guide.
+
+### Q: How can I access the containers from another computer on the Local Network?
+**Date:** 2025-12-26
+
+**Answer:** If you are using **Bridged Networking** (as recommended), your VM has its own IP address on your local network (e.g., `192.168.1.50`).
+
+1.  **Find VM IP**: Run `ip addr show` inside the VM.
+2.  **Access on LAN**: From another computer (e.g., a laptop on the same WiFi), you can access services using that IP:
+    *   `http://192.168.1.50:80` (Heimdall)
+    *   `http://192.168.1.50:9443` (Portainer)
+3.  **Domain Access**: To use domains like `pocmaster.argentquest.com` from the other computer, update its `hosts` file to point the domain to the VM's IP (`192.168.1.50`), just like you did on your main host machine.
 
 ---
 

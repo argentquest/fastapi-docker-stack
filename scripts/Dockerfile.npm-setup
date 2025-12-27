@@ -1,12 +1,13 @@
-FROM python:3.11-slim
+FROM python:3.13-slim
 
 WORKDIR /app
 
 # Install requests for HTTP calls
 RUN pip install requests
 
-# Copy the setup script
+# Copy the setup scripts
 COPY npm-simple-setup.py .
+COPY heimdall-auto-setup.py .
 
 # Make it executable
 RUN chmod +x npm-simple-setup.py
