@@ -5,7 +5,8 @@
 [![PostgreSQL](https://img.shields.io/badge/postgresql-%23316192.svg?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![MongoDB](https://img.shields.io/badge/MongoDB-%234ea94b.svg?style=for-the-badge&logo=mongodb&logoColor=white)](https://www.mongodb.com/)
 
-**🚀 22-Container Self-Hosted Development Environment | 90% Cost Savings vs Cloud Services**
+
+**🚀 20-Container Self-Hosted Development Environment | 90% Cost Savings vs Cloud Services**
 
 A comprehensive development stack with dual FastAPI environments, multiple databases (PostgreSQL+pgvector, MongoDB), management tools, development tools, and workflow automation - all containerized with simplified single-network architecture.
 
@@ -17,7 +18,7 @@ A comprehensive development stack with dual FastAPI environments, multiple datab
 
 ### 🚀 **Quick Start for Contributors**
 ```bash
-# Linux and macOS users (Robust First-Time Setup):
+# Kubuntu 24.04 (Recommended) & Linux users:
 # 1. Nuclear reset to ensure a clean Docker environment
 chmod +x reset_all.sh && ./reset_all.sh
 
@@ -70,7 +71,7 @@ setup.bat
 
 ## 🏗️ Architecture
 
-### Argentquest Development Suite Architecture (22 Services)
+### Argentquest Development Suite Architecture (20 Services)
 
 ```
                     INTERNET
@@ -99,7 +100,7 @@ setup.bat
 
 | Component | Current (Azure) | V2 (Docker) | Cost Savings |
 |-----------|----------------|-------------| ------------|
-| **Hosting** | Azure App Service | VPS + Docker (22 containers) | 95% |
+| **Hosting** | Azure App Service | VPS + Docker (20 containers) | 95% |
 | **Vector Search** | Azure AI Search | PostgreSQL + pgvector | 100% |
 | **Document DB** | Azure Cosmos DB | MongoDB 7.0 | 100% |
 | **LLM Provider** | Azure OpenAI | OpenRouter (GPT-5 Nano) | 95% |
@@ -112,7 +113,7 @@ setup.bat
 
 ## 🚀 Quick Start
 
-### 🐧 Recommended Deployment: Kubuntu VM
+### 🐧 Recommended Deployment: Kubuntu 24.04 LTS
 We strongly recommend running this stack inside a **Kubuntu 24.04 Virtual Machine**. This provides several key benefits:
 1.  **Isolation**: Keeps your development environment clean and separate from your host OS.
 2.  **Linux Learning**: Provides a safe sandbox to learn Linux commands and system administration without risking your main machine.
@@ -138,11 +139,17 @@ While we prioritize the Linux VM approach, the stack *can* run natively on Windo
 
 # Alternative: Use batch files if preferred
 start.bat
+
+### ⚠️ Troubleshooting Build Hangs
+If your setup hangs at "Exporting to image" or "Building app-dev", it means your Docker context is too large or the daemon is contending for resources.
+**Solution:**
+1. Run `./reset_all.sh` to clear the build cache and artifacts.
+2. Run `./setup.sh` again. It now uses **Sequential Builds** and **BuildKit Cache Mounts** to prevent this issue.
 ```
 
 ### 🖥️ Local & Server Deployment Guide
 
-These steps cover both local development and deployment on a fresh Ubuntu 24.04 LTS server.
+These steps cover both local development (on Kubuntu 24.04) and deployment on a fresh Ubuntu 24.04 LTS server.
 
 #### 1. Initial Server Setup (Skip for Local Development)
 
@@ -152,17 +159,13 @@ If you are deploying to a remote server, follow these steps first.
 # Update system packages
 sudo apt update && sudo apt upgrade -y
 
-# Install essential packages
+# Install essential packages (python3-venv is REQUIRED for setup.sh)
 sudo apt install -y curl wget git nano htop unzip python3 python3-pip python3-venv
 
-# Install Docker
+# Install Docker (if not installed)
 curl -fsSL https://get.docker.com -o get-docker.sh
 sudo sh get-docker.sh
 sudo usermod -aG docker $USER
-
-# Install Docker Compose
-sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-sudo chmod +x /usr/local/bin/docker-compose
 
 # Log out and back in for Docker permissions to take effect
 exit
@@ -289,7 +292,7 @@ SERVER_IP    jupyter.pocmaster.argentquest.com
 
 #### 5. Deploy the Full Stack
 ```bash
-# Start all 22 containers
+# Start all 20 containers
 docker-compose up -d
 
 # Wait for containers to initialize (2-3 minutes)
@@ -588,7 +591,7 @@ pip install uv
 | **VS Code Server** | - | changeme | Browser IDE |
 | **n8n Workflows** | - | - | User management disabled |
 | **Jupyter Lab** | - | changeme | Token-based auth |
-| **Portainer** | admin | argentquest123 | 🚀 Automagically configured |
+| **Portainer** | admin | argentquest123 | 🚀 **Managed by reset_all.sh** (Auto-installed) |
 
 ### Database Connections
 

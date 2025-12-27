@@ -15,20 +15,19 @@ WORKDIR /app
 # Copy the dependency configuration files.
 COPY pyproject.toml uv.lock* README.md ./
 
-# Install dependencies into a virtual environment using uv.
-# --frozen ensures that the exact versions from the lock file are used.
-RUN uv sync --frozen
+# Install dependencies into a virtual environment using uv with cache mount.
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --frozen
 
 
 # --- Production Stage ---
 # This stage creates the final, lean image for the application.
 FROM python:3.13-slim
 
-# Install system dependencies required by libraries like psycopg2 (for PostgreSQL).
-# libpq5 is the PostgreSQL C client library.
-# curl is needed for health checks in Docker containers.
-# Set DEBIAN_FRONTEND to avoid interactive prompts during build
-RUN DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install -y \
+# Install system dependencies with apt cache mount
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install -y \
     libpq5 \
     curl \
     && rm -rf /var/lib/apt/lists/*

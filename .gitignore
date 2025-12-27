@@ -59,7 +59,7 @@ redis_data/
 minio_data/
 
 # Docker
-.dockerignore
+# .dockerignore
 docker-compose.override.yml
 docker-compose.local.yml
 

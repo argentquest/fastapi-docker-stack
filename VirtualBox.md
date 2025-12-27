@@ -100,12 +100,33 @@ Write-Host "VM created. REMEMBER: Manually set Network to 'Bridged Adapter' in S
 2.  Choose **Install Kubuntu**, select Language/Keyboard.
 3.  Choose **Normal Installation** + **Third-party software**.
 4.  **Erase disk and install Kubuntu**.
-5.  Create your user (e.g., `devadmin`) and password.
+5.  **Create User (Project Standard)**:
+    *   **Your name**: Argentquest Dev
+    *   **Username**: `argentquest`  <-- IMPORTANT
+    *   **Password**: `argentquest123` <-- IMPORTANT
+    *   **Computer name**: `argentquest-vm`
 6.  Reboot when finished.
 
 ## 5. Post-Installation: Automated Environment Setup
 
-Instead of running manual commands, use this script to install Docker, VS Code, Python 3.13, and Git.
+This step converts your fresh Kubuntu installation into a powerful development workstation.
+
+### 📦 Applications Added to Kubuntu 24.04
+The automated script below will install and configure the following tailored software stack:
+
+1.  **Docker Engine & Compose:** The core containerization platform for running the 22-service suite.
+2.  **Python 3.13:** The latest modern Python, configured with `venv` and `dev` tools for backend development.
+3.  **Visual Studio Code:** The industry-standard IDE, installed with official Microsoft repositories.
+4.  **Git:** Distributed version control for managing the project codebase.
+5.  **System Utilities:** Essential tools like `curl`, `wget`, `htop`, and `unzip`.
+
+### Optional Power Tools (Included in script as comments)
+*   **Postman:** Essential for testing expected payloads against the FastAPI endpoints.
+*   **DBeaver:** A powerful universal database client to manage PostgreSQL and MongoDB visually.
+*   **LazyDocker:** An amazing terminal UI for managing containers without leaving the command line.
+
+### Automated Setup Script
+Instead of running dozens of manual commands, use this script to install everything at once:
 
 1.  Open Terminal (`Ctrl+Alt+T`) in the VM.
 2.  Create `setup_env.sh`:
@@ -116,10 +137,17 @@ Instead of running manual commands, use this script to install Docker, VS Code, 
     ```bash
     #!/bin/bash
     set -e
+    
+    # --- Standard Sudo Configuration ---
+    echo ">>> Configuring standard sudo rights..."
+    # Ensure current user has passwordless sudo (Standard for Dev VMs)
+    echo "$USER ALL=(ALL) NOPASSWD:ALL" | sudo tee /etc/sudoers.d/90-argentquest-nopasswd > /dev/null
+    sudo chmod 440 /etc/sudoers.d/90-argentquest-nopasswd
+    
     echo ">>> Updating system..."
     sudo apt update && sudo apt upgrade -y
-    echo ">>> Installing Dependencies..."
-    sudo apt install -y software-properties-common curl git wget apt-transport-https ca-certificates gnupg
+    echo ">>> Installing Dependencies (curl, git, wget)..."
+    sudo apt install -y software-properties-common curl git wget apt-transport-https ca-certificates gnupg htop unzip
     echo ">>> Installing Python 3.13..."
     sudo add-apt-repository ppa:deadsnakes/ppa -y
     sudo apt update
@@ -139,7 +167,22 @@ Instead of running manual commands, use this script to install Docker, VS Code, 
     rm -f packages.microsoft.gpg
     sudo apt update
     sudo apt install -y code
-    echo ">>> Done! Please REBOOT."
+    
+    echo ">>> Installing Power Tools (Postman, DBeaver, LazyDocker)..."
+    
+    # 1. Postman (API Testing)
+    echo ">>> Installing Postman..."
+    sudo snap install postman
+
+    # 2. DBeaver (Universal Database Client)
+    echo ">>> Installing DBeaver..."
+    sudo snap install dbeaver-ce
+
+    # 3. LazyDocker (Terminal UI for Docker)
+    echo ">>> Installing LazyDocker..."
+    curl https://raw.githubusercontent.com/jesseduffield/lazydocker/master/scripts/install_update_linux.sh | bash
+
+    echo ">>> Done! Software stack installed. Please REBOOT now."
     ```
 4.  Run it:
     ```bash
@@ -158,26 +201,61 @@ cd argentquest-suite
 cp .env.template .env
 nano .env  # Edit with your API keys and settings
 
-# Start all 22 containers
-docker-compose up -d
+# 🚀 DEPLOYMENT (The Standard Way)
+# We use a 2-step process to ensure a clean, reliable state every time.
 
-# Wait for initialization
-sleep 180
+# 1. Nuclear Reset (Cleans Docker, Cache, & Old Data)
+chmod +x reset_all.sh setup.sh
+./reset_all.sh
 
-# Set up NPM proxy hosts
-python3 scripts/npm-simple-setup.py
-
-# Validate deployment
-python3 health-check.py
+# 2. Automated Setup (Builds, Launches & Configures)
+./setup.sh
 ```
 
-### 3. VM Resource Recommendations
+**Note:** The `setup.sh` script automatically handles:
+*   Building images with BuildKit
+*   Launching all 21 containers
+*   Waiting for healthy services
+*   Configuring the Nginx Proxy Manager
+*   Populating the Heimdall Dashboard
 
-For optimal performance with the 22-container stack:
+### 🔎 Understanding the Orchestration Scripts
+
+Since we rely on these two scripts, here is exactly what they do under the hood:
+
+#### `reset_all.sh` (The "Nuclear" Option)
+Think of this as a "Factory Reset" for your Docker environment. It fixes 99% of issues by clearing out corrupted state.
+1.  **Stops & Removes** all project containers.
+2.  **Prunes** all Docker system data (images, volumes, networks) to free disk space.
+3.  **Cleans** project artifacts (`.venv`, `__pycache__`, old logs).
+4.  **Reclaims** disk space (often freeing 5-10GB).
+5.  **Ensures** a completely clean slate for the next build.
+
+#### `setup.sh` (The "One-Click" Deploy)
+This is the intelligent installer that replaces manual configuration.
+1.  **Environment Check**: Verifies Sudo rights, Docker status, and Port availability.
+2.  **Config Generation**: Creates default `.env` files if they are missing.
+3.  **Sequential Build**: Builds the core `app-dev` image *first* to prevent Docker engine hangs.
+4.  **Launch**: Starts all 21 containers with `docker compose up`.
+5.  **Smart Wait**: Polls the Nginx Proxy Manager API until it is healthy (instead of a fixed sleep timer).
+6.  **Auto-Configuration**:
+    *   Configures NPM proxy hosts via API.
+    *   Sets up Heimdall dashboard links.
+    *   Runs final system health checks.
+
+#### 🧹 Ephemeral Setup Containers
+You might notice containers like `aq-devsuite-npm-setup` and `aq-devsuite-beszel-setup` in your list.
+*   **Purpose**: These are temporary "worker" containers.
+*   **Lifecycle**: They run *once* to perform API configurations (like setting up proxy hosts) and then **automatically exit**.
+*   **Cleanup**: One the stack is healthy, these containers are stopped and no longer consume resources. They are kept only for logs/debugging.
+
+### 2. Clone and Deploy the Development Suite
+
+For optimal performance with the **20-container stack**:
 
 | Component | Minimum | Recommended | Notes |
 |-----------|---------|-------------|-------|
-| **RAM** | 8GB | 16GB | 22 containers require significant memory |
+| **RAM** | 8GB | 16GB | 20 containers require significant memory |
 | **CPU Cores** | 1 | 4 | Multiple services benefit from parallel processing |
 | **Storage** | 100GB | 200GB | Docker images, volumes, and logs |
 | **Network** | Bridged | Bridged | Required for external access to services |

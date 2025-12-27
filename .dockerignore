@@ -1,0 +1,50 @@
+# Docker Ignore List - Pruning the Build Context
+# ---------------------------------------------
+
+# Version Control
+.git/
+.gitignore
+
+# Virtual Environments (Host)
+.venv/
+venv/
+ENV/
+env/
+
+# Application Specific Data (Host) - MASSIVE
+data/
+scripts/pgadmin-config/
+scripts/npm-config/
+
+# Python Build Cache
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.pyd
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+.uv/
+
+# Logs
+*.log
+setup_log.txt
+
+# Local Environment Files (Secrets)
+.env
+.env.dev
+.env.prod
+.env.template
+
+# IDEs
+.vscode/
+.idea/
+
+# Large binaries/temp files
+get-docker.sh
+install-docker.sh
+*.tar
+*.zip
+*.gz
