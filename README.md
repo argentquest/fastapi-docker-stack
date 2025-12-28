@@ -111,6 +111,14 @@ setup.bat
 | **Management** | Azure Portal | Portainer + Heimdall | 100% |
 | **IDE** | VS Code Desktop | VS Code Server | 100% |
 
+### ⚡ Lightweight Architecture (Non-GPU)
+
+**Recent Update:** To support standard VPS and local environments without dedicated GPUs, we have optimized the stack by removing heavy machine learning dependencies:
+- **Removed:** PyTorch, NVIDIA CUDA libraries, and `sentence-transformers`.
+- **Mocked:** The `EmbeddingService` now uses a lightweight mock implementation (zero-vectors) instead of local inference.
+- **Benefit:** Significantly reduced image size (approx. 2GB saved) and faster build times.
+- **Note:** Semantic search features will return placeholder results in this mode.
+
 ## 🚀 Quick Start
 
 ### 🐧 Recommended Deployment: Kubuntu 24.04 LTS
