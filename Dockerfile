@@ -52,8 +52,8 @@ COPY frontendgemini/ frontendgemini/
 
 # Create a non-root user and group for security.
 # Running as a non-root user is a critical security best practice.
-RUN addgroup --system --gid 1001 appgroup && \
-    adduser --system --uid 1001 --ingroup appgroup --home /home/appuser appuser && \
+RUN addgroup --gid 1001 appgroup && \
+    adduser --uid 1001 --ingroup appgroup --home /home/appuser --disabled-password --gecos "" appuser && \
     mkdir -p /home/appuser/.cache && \
     chown -R appuser:appgroup /app /home/appuser
 

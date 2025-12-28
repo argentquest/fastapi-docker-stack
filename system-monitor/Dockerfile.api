@@ -16,11 +16,8 @@ RUN apk add --no-cache \
 
 WORKDIR /app
 
-# Install Python dependencies (psutil needs build tools)
-RUN pip install --no-cache-dir \
-    aiohttp \
-    aiofiles \
-    psutil
+# Suppress pip root user warning
+ENV PIP_ROOT_USER_ACTION=ignore
 
 # Install Python dependencies directly (no requirements.txt needed)
 RUN pip install --no-cache-dir \
@@ -32,24 +29,22 @@ RUN pip install --no-cache-dir \
 COPY api.py /app/
 
 # Create startup script
-RUN cat > /app/start.sh << 'EOF'
-#!/bin/bash
-set -e
-
-echo "Starting System Monitor API..."
-echo "Port: 8083"
-echo "Host: 0.0.0.0"
-
-# Ensure Docker socket is accessible
-if [ -S /var/run/docker.sock ]; then
-    echo "Docker socket found - container monitoring enabled"
-else
-    echo "Warning: Docker socket not found - limited monitoring"
-fi
-
-# Start the API server
-exec python api.py
-EOF
+RUN printf '#!/bin/bash\n\
+    set -e\n\
+    \n\
+    echo "Starting System Monitor API..."\n\
+    echo "Port: 8083"\n\
+    echo "Host: 0.0.0.0"\n\
+    \n\
+    # Ensure Docker socket is accessible\n\
+    if [ -S /var/run/docker.sock ]; then\n\
+    echo "Docker socket found - container monitoring enabled"\n\
+    else\n\
+    echo "Warning: Docker socket not found - limited monitoring"\n\
+    fi\n\
+    \n\
+    # Start the API server\n\
+    exec python api.py\n' > /app/start.sh
 
 RUN chmod +x /app/start.sh
 
